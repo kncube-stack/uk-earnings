@@ -298,7 +298,7 @@ export default function EarningsDashboard() {
                             fontSize={isMed ? fs.medianLabel : fs.pctLabel}
                             fontWeight={isMed ? 700 : 400}
                             fontFamily="'DM Sans', sans-serif">
-                            {`${p.lbl} · ${fmt(p.val)}`}
+                            {p.lbl}
                           </text>
                         ) : isMed ? (
                           <text x={x + BW/2 + r + 3} y={cy + 3}
