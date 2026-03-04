@@ -368,7 +368,7 @@ function CompBar({ data, isMobile, C }) {
         {parts.map(p => (
           <span key={p.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, opacity: 0.75, display: "inline-block" }} />
-            {p.label}: <strong style={{ color: C.text }}>{`\u00a3${Math.round(p.value)}`}/wk</strong>
+            {p.label}: <strong style={{ color: C.text }}>{`£${Math.round(p.value)}`}/wk</strong>
             <span style={{ color: C.dim }}>({Math.round(p.value / total * 100)}%)</span>
           </span>
         ))}
@@ -380,8 +380,8 @@ function CompBar({ data, isMobile, C }) {
         }}>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: "#4ecb71", opacity: 0.75, display: "inline-block" }} />
-            Annual incentive/bonus: <strong style={{ color: C.text }}>{`\u00a3${data.inc.toLocaleString("en-GB")}`}</strong>
-            <span style={{ color: C.dim }}>({`\u00a3${Math.round(data.inc / 52)}`}/wk equiv.)</span>
+            Annual incentive/bonus: <strong style={{ color: C.text }}>{`£${data.inc.toLocaleString("en-GB")}`}</strong>
+            <span style={{ color: C.dim }}>({`£${Math.round(data.inc / 52)}`}/wk equiv.)</span>
           </span>
         </div>
       )}
@@ -489,9 +489,9 @@ export default function EarningsDashboard() {
   const fmt = (v) => {
     if (v == null) return "\u2014";
     if (isHours) return `${Number.isInteger(v) ? v : v.toFixed(1)}h`;
-    if (isHourly) return `\u00a3${v.toFixed(2)}`;
-    if (isWeekly) return `\u00a3${v.toLocaleString("en-GB")}`;
-    return `\u00a3${v.toLocaleString("en-GB")}`;
+    if (isHourly) return `£${v.toFixed(2)}`;
+    if (isWeekly) return `£${v.toLocaleString("en-GB")}`;
+    return `£${v.toLocaleString("en-GB")}`;
   };
 
   // Description helpers
@@ -779,7 +779,7 @@ export default function EarningsDashboard() {
                     {" "}The median {periodLabel}{isHours ? "" : " gross pay"} for {cohortDesc} in this group is{" "}
                     <strong style={{ color: C.text }}>{fmt(med)}</strong>.
                     {diff > 0
-                      ? <>{" "}You're {isHours ? "working" : "earning"} <strong style={{ color: isHours ? C.red : C.green }}>{fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "more than" : "above"}</strong> the median.{isHours && pctDiff > 15 && " That\u2019s significantly more hours than most."}</>
+                      ? <>{" "}You're {isHours ? "working" : "earning"} <strong style={{ color: isHours ? C.red : C.green }}>{fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "more than" : "above"}</strong> the median.{isHours && pctDiff > 15 && " That’s significantly more hours than most."}</>
                       : diff < 0
                       ? <>{" "}You're {isHours ? "working" : "earning"} <strong style={{ color: isHours ? C.green : C.red }}>{fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "fewer than" : "below"}</strong> the median.</>
                       : <>{" "}You're <strong>right on</strong> the median.</>
@@ -834,7 +834,7 @@ export default function EarningsDashboard() {
                 <div style={{
                   fontSize: isMobile ? 12 : 13, color: C.muted, marginBottom: 10,
                   fontWeight: 500,
-                }}>Average weekly pay breakdown \u00b7 {userGroupLabel} age group</div>
+                }}>Average weekly pay breakdown · {userGroupLabel} age group</div>
                 <CompBar data={compData} isMobile={isMobile} C={C} />
               </div>
             )}
@@ -858,7 +858,7 @@ export default function EarningsDashboard() {
                   <div style={{
                     fontSize: isMobile ? 12 : 13, color: C.muted, marginBottom: 10,
                     fontWeight: 500,
-                  }}>Estimated take-home pay \u00b7 2025/26 rates</div>
+                  }}>Estimated take-home pay · 2025/26 rates</div>
                   <div style={{
                     display: "flex", height: isMobile ? 20 : 24, borderRadius: 6, overflow: "hidden",
                     background: C.faint, marginBottom: 8,
@@ -878,7 +878,7 @@ export default function EarningsDashboard() {
                     {parts.map(p => (
                       <span key={p.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, opacity: 0.75, display: "inline-block" }} />
-                        {p.label}: <strong style={{ color: C.text }}>\u00a3{p.value.toLocaleString("en-GB")}</strong>
+                        {p.label}: <strong style={{ color: C.text }}>£{p.value.toLocaleString("en-GB")}</strong>
                         <span style={{ color: C.dim }}>({Math.round(p.value / barTotal * 100)}%)</span>
                       </span>
                     ))}
@@ -888,8 +888,8 @@ export default function EarningsDashboard() {
                     display: "flex", gap: isMobile ? 10 : 20, flexWrap: "wrap",
                     fontSize: isMobile ? 11 : 12, color: C.muted,
                   }}>
-                    <span>Monthly: <strong style={{ color: "#4ecb71" }}>\u00a3{netMonthly.toLocaleString("en-GB")}</strong></span>
-                    <span>Weekly: <strong style={{ color: "#4ecb71" }}>\u00a3{netWeekly.toLocaleString("en-GB")}</strong></span>
+                    <span>Monthly: <strong style={{ color: "#4ecb71" }}>£{netMonthly.toLocaleString("en-GB")}</strong></span>
+                    <span>Weekly: <strong style={{ color: "#4ecb71" }}>£{netWeekly.toLocaleString("en-GB")}</strong></span>
                     <span>Effective rate: <strong style={{ color: C.text }}>{tp.effectiveRate}%</strong></span>
                   </div>
                   {(isHourly || isWeekly) && (
@@ -897,8 +897,8 @@ export default function EarningsDashboard() {
                       marginTop: 6, fontSize: isMobile ? 10 : 11, color: C.dim, fontStyle: "italic",
                     }}>
                       {isHourly
-                        ? `Based on ${parseFloat(hoursPay) || 37.5}hrs/wk \u00d7 52 weeks = \u00a3${annualGross.toLocaleString("en-GB")} annual gross`
-                        : `Based on \u00a3${salary.toLocaleString("en-GB")}/wk \u00d7 52 = \u00a3${annualGross.toLocaleString("en-GB")} annual gross`
+                        ? `Based on ${parseFloat(hoursPay) || 37.5}hrs/wk × 52 weeks = £${annualGross.toLocaleString("en-GB")} annual gross`
+                        : `Based on £${salary.toLocaleString("en-GB")}/wk × 52 = £${annualGross.toLocaleString("en-GB")} annual gross`
                       }
                     </div>
                   )}
