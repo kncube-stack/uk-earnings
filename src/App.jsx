@@ -282,11 +282,12 @@ const C = {
   dim:"#555249",faint:"#2a2d33",
 };
 
-const dotColor = (k) => ({
+const DOT_COLORS = {
   p10:"#3565a0",p20:"#3d72ae",p25:"#4580ba",p30:"#4e8cc4",
   p40:"#5a9ad0",median:"#f5f0e8",p60:"#d4a843",p70:"#c49538",
   p75:"#b08530",p80:"#9c7428",p90:"#886420",
-}[k] || C.blue);
+};
+const dotColor = (k) => DOT_COLORS[k] ?? C.blue;
 
 function useContainerWidth(ref) {
   const [width, setWidth] = useState(800);
@@ -421,7 +422,8 @@ export default function EarningsDashboard() {
   const data = DATA[period][dataKey] || DATA[period].all;
   const isWeekly = period === "weekly";
 
-  const age = parseInt(userAge) || null;
+  const rawAge = parseInt(userAge);
+  const age = !isNaN(rawAge) && rawAge >= 16 ? rawAge : null;
   const isHourly = period === "hourly";
   const isHours = period === "hours";
   const userSalary = isHours ? hoursPay : isHourly ? hourlyPay : isWeekly ? weeklyPay : annualPay;
@@ -439,10 +441,7 @@ export default function EarningsDashboard() {
   const dataMax = Math.max(...data.flatMap(d => PK.map(k => d[k]).filter(Boolean)));
   const scaleMax = Math.max(dataMax, Math.min(salary || 0, dataMax * 1.35));
   let chartMax, gridStep;
-  if (isHours) {
-    chartMax = Math.ceil(scaleMax / 5) * 5 + 5;
-    gridStep = isMobile ? 10 : 5;
-  } else if (isHourly) {
+  if (isHours || isHourly) {
     chartMax = Math.ceil(scaleMax / 5) * 5 + 5;
     gridStep = isMobile ? 10 : 5;
   } else if (isWeekly) {
@@ -490,7 +489,6 @@ export default function EarningsDashboard() {
     if (v == null) return "\u2014";
     if (isHours) return `${Number.isInteger(v) ? v : v.toFixed(1)}h`;
     if (isHourly) return `£${v.toFixed(2)}`;
-    if (isWeekly) return `£${v.toLocaleString("en-GB")}`;
     return `£${v.toLocaleString("en-GB")}`;
   };
 
@@ -510,7 +508,6 @@ export default function EarningsDashboard() {
       padding: isMobile ? "20px 10px" : "32px 20px",
       fontFamily: "'DM Sans', 'Segoe UI', sans-serif", color: C.text,
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet" />
       <div ref={containerRef} style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
 
         <h1 style={{
@@ -573,7 +570,7 @@ export default function EarningsDashboard() {
               {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
             </label>
             <input type="text" inputMode="decimal" value={userSalary}
-              onChange={e => setUserSalary(e.target.value.replace(/[^0-9.]/g, ""))}
+              onChange={e => setUserSalary(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
               style={{
                 width: "100%", padding: "10px", borderRadius: 6,
                 border: `1px solid ${C.faint}`, background: C.card,
