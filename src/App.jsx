@@ -810,13 +810,13 @@ export default function EarningsDashboard() {
             </div>
           )}
 
-          {isOccupationView && selectedOccupation && !selectedOccupationAgeBand && (
+          {isOccupationView && selectedOccupation && (
             <div style={{ width: isMobile ? "100%" : 320, flexShrink: 0 }}>
               <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Job detail</label>
               <select
                 value={selectedOccupationDetail}
                 onChange={(e) => setSelectedOccupationDetail(e.target.value)}
-                disabled={currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error"}
+                disabled={selectedOccupationAgeBand || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error"}
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -827,13 +827,15 @@ export default function EarningsDashboard() {
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
-                  opacity: currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error" ? 0.65 : 1,
+                  opacity: selectedOccupationAgeBand || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error" ? 0.65 : 1,
                   boxSizing: "border-box",
                   appearance: "none",
                 }}
               >
                 <option value="">
-                  {currentOccupationDetailStatus === "loading"
+                  {selectedOccupationAgeBand
+                    ? "Unavailable with age band"
+                    : currentOccupationDetailStatus === "loading"
                     ? "Loading job details..."
                     : currentOccupationDetailStatus === "error"
                       ? "Job detail unavailable"
