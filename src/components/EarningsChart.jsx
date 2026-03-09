@@ -87,7 +87,6 @@ export default function EarningsChart({
   };
   const dotRadius = isMobile ? 3 : 4;
   const medianRadius = isMobile ? 4.5 : 6;
-  const showDefaultMedianLabels = !(compactMobile && detailAxis);
   const selectedMedianLabel = selectedRow?.median != null ? `Median ${fmt(selectedRow.median)}` : null;
 
   return (
@@ -287,7 +286,7 @@ export default function EarningsChart({
                         >
                           {point.lbl}
                         </text>
-                      ) : isMedian && showDefaultMedianLabels ? (
+                      ) : isMedian ? (
                         <text
                           x={x + barWidth / 2 + radius + 3}
                           y={cy + 3}
