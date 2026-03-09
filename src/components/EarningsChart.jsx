@@ -44,9 +44,11 @@ export default function EarningsChart({
     () => data.findIndex((row) => (row.id ?? row.label) === selectedBucketId),
     [data, selectedBucketId],
   );
+  const selectedRow = selectedIndex >= 0 ? data[selectedIndex] : null;
   const scrollRef = useCenterSelectedScroll({
     barWidth,
     containerWidth,
+    contentWidth: actualWidth,
     gap,
     leftPad: left,
     scrollable: chartScrollable,
@@ -111,15 +113,38 @@ export default function EarningsChart({
         </div>
       )}
 
+      {selectedRow && (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 8,
+            padding: isMobile ? "6px 10px" : "7px 12px",
+            borderRadius: 999,
+            border: `1px solid ${C.gold}33`,
+            background: `${C.gold}10`,
+            color: C.text,
+            fontSize: isMobile ? 11 : 12,
+            maxWidth: "100%",
+          }}
+        >
+          <span style={{ color: C.gold, fontWeight: 700, whiteSpace: "nowrap" }}>Selected</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {selectedRow.label}
+          </span>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         style={{
           marginBottom: 8,
-          overflowX: "auto",
+          overflowX: "scroll",
           overflowY: "hidden",
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
-          scrollBehavior: "smooth",
+          scrollBehavior: "auto",
         }}
       >
         <svg
@@ -127,7 +152,7 @@ export default function EarningsChart({
           height={top + height + bottomPad}
           viewBox={`0 0 ${actualWidth} ${top + height + bottomPad}`}
           preserveAspectRatio="xMinYMid meet"
-          style={{ display: "block", touchAction: "pan-y", minWidth: "100%" }}
+          style={{ display: "block", touchAction: "auto", minWidth: "100%" }}
         >
           {gridLines.map((value) => (
             <g key={value}>

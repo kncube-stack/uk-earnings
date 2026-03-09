@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef } from "react";
 export function useCenterSelectedScroll({
   barWidth,
   containerWidth,
+  contentWidth,
   gap,
   leftPad,
   scrollable,
@@ -22,15 +23,45 @@ export function useCenterSelectedScroll({
       window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const frame = requestAnimationFrame(() => {
-      container.scrollTo({
-        left: targetLeft,
-        behavior: prefersReducedMotion ? "auto" : "smooth",
-      });
-    });
+    let animationFrame = 0;
+    let timeoutId = 0;
 
-    return () => cancelAnimationFrame(frame);
-  }, [barWidth, containerWidth, gap, leftPad, scrollable, selectedIndex]);
+    const run = () => {
+      if (prefersReducedMotion) {
+        container.scrollLeft = targetLeft;
+        return;
+      }
+
+      const startLeft = container.scrollLeft;
+      const distance = targetLeft - startLeft;
+      if (Math.abs(distance) < 2) {
+        container.scrollLeft = targetLeft;
+        return;
+      }
+
+      const start = performance.now();
+      const duration = 320;
+
+      const step = (now) => {
+        const elapsed = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - elapsed, 3);
+        container.scrollLeft = startLeft + distance * eased;
+        if (elapsed < 1) {
+          animationFrame = requestAnimationFrame(step);
+        }
+      };
+
+      animationFrame = requestAnimationFrame(step);
+    };
+
+    animationFrame = requestAnimationFrame(run);
+    timeoutId = window.setTimeout(run, 80);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      window.clearTimeout(timeoutId);
+    };
+  }, [barWidth, containerWidth, contentWidth, gap, leftPad, scrollable, selectedIndex]);
 
   return scrollRef;
 }
