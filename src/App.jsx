@@ -1,9 +1,12 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
-// ─── Percentile config ───
-const PK = ["p10","p20","p25","p30","p40","median","p60","p70","p75","p80","p90"];
-const PL = {p10:"10th",p20:"20th",p25:"25th",p30:"30th",p40:"40th",median:"50th",p60:"60th",p70:"70th",p75:"75th",p80:"80th",p90:"90th"};
-const PV = {p10:10,p20:20,p25:25,p30:30,p40:40,median:50,p60:60,p70:70,p75:75,p80:80,p90:90};
+import EarningsChart from "./components/EarningsChart";
+import InsightCard from "./components/InsightCard";
+import Pill from "./components/Pill";
+import { useContainerWidth } from "./hooks/useContainerWidth";
+import { PK } from "./percentiles";
+import { C } from "./theme";
+import { estimatePercentile, findGroup } from "./utils/earnings";
 
 // ─── ASHE 2025 Data ───
 // Structure: DATA[period][genderWork] = array of age groups
@@ -249,147 +252,6 @@ const COMP = {
   female_ft: [{basic:420.5,ot:null,other:4.6,inc:null},{basic:497.5,ot:5.5,other:9.0,inc:434},{basic:672.5,ot:7.4,other:13.9,inc:1115},{basic:840.6,ot:6.9,other:14.7,inc:2529},{basic:905.5,ot:9.2,other:12.5,inc:2951},{basic:848.9,ot:8.7,other:13.2,inc:1808},{basic:760.4,ot:9.1,other:10.8,inc:null}],
 };
 
-// ─── Helpers ───
-function findGroup(age) {
-  if (age <= 17) return "16–17";
-  if (age <= 21) return "18–21";
-  if (age <= 29) return "22–29";
-  if (age <= 39) return "30–39";
-  if (age <= 49) return "40–49";
-  if (age <= 59) return "50–59";
-  return "60+";
-}
-
-function estimatePercentile(group, salary) {
-  if (!group) return null;
-  const pts = PK.map(k => ({ p: PV[k], v: group[k] })).filter(pt => pt.v != null);
-  if (pts.length < 2) return null;
-  if (salary <= pts[0].v) return { value: pts[0].p, below: true };
-  if (salary >= pts[pts.length-1].v) return { value: pts[pts.length-1].p, above: true };
-  for (let i = 0; i < pts.length - 1; i++) {
-    if (salary >= pts[i].v && salary <= pts[i+1].v) {
-      const frac = (salary - pts[i].v) / (pts[i+1].v - pts[i].v);
-      return { value: Math.round(pts[i].p + frac * (pts[i+1].p - pts[i].p)) };
-    }
-  }
-  return null;
-}
-
-const C = {
-  bg:"#0b0e13",card:"#12161d",border:"#1f2430",
-  gold:"#d4a843",blue:"#5b82b5",red:"#e05c3a",
-  green:"#4ecb71",text:"#e8e6e1",muted:"#8a8578",
-  dim:"#555249",faint:"#2a2d33",
-};
-
-const DOT_COLORS = {
-  p10:"#3565a0",p20:"#3d72ae",p25:"#4580ba",p30:"#4e8cc4",
-  p40:"#5a9ad0",median:"#f5f0e8",p60:"#d4a843",p70:"#c49538",
-  p75:"#b08530",p80:"#9c7428",p90:"#886420",
-};
-const dotColor = (k) => DOT_COLORS[k] ?? C.blue;
-
-function useContainerWidth(ref) {
-  const [width, setWidth] = useState(800);
-  useEffect(() => {
-    if (!ref.current) return;
-    const obs = new ResizeObserver(entries => {
-      for (const entry of entries) setWidth(entry.contentRect.width);
-    });
-    obs.observe(ref.current);
-    setWidth(ref.current.offsetWidth);
-    return () => obs.disconnect();
-  }, [ref]);
-  return width;
-}
-
-// ─── Filter button component ───
-function Pill({ active, onClick, children, isMobile }) {
-  return (
-    <button onClick={onClick} style={{
-      padding: isMobile ? "8px 12px" : "7px 14px",
-      borderRadius: 6, border: `1px solid ${active ? C.gold : C.faint}`,
-      background: active ? C.gold + "18" : "transparent",
-      color: active ? C.gold : C.dim,
-      fontSize: isMobile ? 12 : 13, fontWeight: 500,
-      cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-    }}>{children}</button>
-  );
-}
-
-// ─── Main component ───
-
-// ─── UK Tax/NI Calculator 2025/26 ───
-function calcNetPay(gross) {
-  if (!gross || gross <= 0) return null;
-  // Personal allowance with £100k taper
-  let pa = 12570;
-  if (gross > 100000) pa = Math.max(0, pa - Math.floor((gross - 100000) / 2));
-  // Income tax
-  const taxable = Math.max(0, gross - pa);
-  let tax = 0;
-  if (taxable > 0) tax += Math.min(taxable, 37700) * 0.20;
-  if (taxable > 37700) tax += Math.min(taxable - 37700, 74870) * 0.40;
-  if (taxable > 112570) tax += (taxable - 112570) * 0.45;
-  // Employee NI: 8% on £12,570–£50,270, 2% above £50,270
-  let ni = 0;
-  if (gross > 12570) ni += Math.min(gross - 12570, 37700) * 0.08;
-  if (gross > 50270) ni += (gross - 50270) * 0.02;
-  const net = gross - tax - ni;
-  return { net: Math.round(net), tax: Math.round(tax), ni: Math.round(ni), effectiveRate: Math.round((tax + ni) / gross * 100) };
-}
-
-function CompBar({ data, isMobile, C }) {
-  if (!data) return null;
-  const total = (data.basic || 0) + (data.ot || 0) + (data.other || 0);
-  if (total === 0) return null;
-  const parts = [
-    { label: "Basic", value: data.basic || 0, color: "#5b82b5" },
-    { label: "Overtime", value: data.ot || 0, color: "#d4a843" },
-    { label: "Other", value: data.other || 0, color: "#7c6daa" },
-  ].filter(p => p.value > 0);
-  return (
-    <div>
-      <div style={{
-        display: "flex", height: isMobile ? 20 : 24, borderRadius: 6, overflow: "hidden",
-        background: C.faint, marginBottom: 8,
-      }}>
-        {parts.map((p, i) => (
-          <div key={p.label} style={{
-            width: `${(p.value / total * 100).toFixed(1)}%`,
-            background: p.color, opacity: 0.75,
-            borderRight: i < parts.length - 1 ? `1px solid ${C.bg}` : "none",
-          }} />
-        ))}
-      </div>
-      <div style={{
-        display: "flex", gap: isMobile ? 8 : 16, flexWrap: "wrap",
-        fontSize: isMobile ? 11 : 12, color: C.muted,
-      }}>
-        {parts.map(p => (
-          <span key={p.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, opacity: 0.75, display: "inline-block" }} />
-            {p.label}: <strong style={{ color: C.text }}>{`£${Math.round(p.value)}`}/wk</strong>
-            <span style={{ color: C.dim }}>({Math.round(p.value / total * 100)}%)</span>
-          </span>
-        ))}
-      </div>
-      {data.inc && (
-        <div style={{
-          marginTop: 8, fontSize: isMobile ? 11 : 12, color: C.muted,
-          paddingTop: 6, borderTop: `1px solid ${C.faint}`,
-        }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: "#4ecb71", opacity: 0.75, display: "inline-block" }} />
-            Annual incentive/bonus: <strong style={{ color: C.text }}>{`£${data.inc.toLocaleString("en-GB")}`}</strong>
-            <span style={{ color: C.dim }}>({`£${Math.round(data.inc / 52)}`}/wk equiv.)</span>
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function EarningsDashboard() {
   const [period, setPeriod] = useState("annual");
   const [gender, setGender] = useState("all");
@@ -437,45 +299,9 @@ export default function EarningsDashboard() {
 
   const availableKeys = useMemo(() => PK.filter(k => data.some(d => d[k] != null)), [data]);
 
-  // Scale chart to data range — cap salary influence to 30% above data max
-  const dataMax = Math.max(...data.flatMap(d => PK.map(k => d[k]).filter(Boolean)));
-  const scaleMax = Math.max(dataMax, Math.min(salary || 0, dataMax * 1.35));
-  let chartMax, gridStep;
-  if (isHours || isHourly) {
-    chartMax = Math.ceil(scaleMax / 5) * 5 + 5;
-    gridStep = isMobile ? 10 : 5;
-  } else if (isWeekly) {
-    chartMax = Math.ceil(scaleMax / 200) * 200 + 100;
-    gridStep = isMobile ? 400 : 200;
-  } else {
-    chartMax = Math.ceil(scaleMax / 10000) * 10000 + 5000;
-    gridStep = isMobile ? 20000 : 10000;
-  }
-
-  const LEFT = isMobile ? 44 : 64;
-  const RIGHT_PAD = isMobile ? 12 : 30;
-  const usableW = Math.max(200, cw - 8 - LEFT - RIGHT_PAD);
-  const BW = Math.max(28, Math.min(74, Math.floor(usableW / data.length) - (isMobile ? 6 : 16)));
-  const GAP = Math.max(4, Math.min(20, Math.floor((usableW - BW * data.length) / Math.max(1, data.length - 1))));
-  const actualW = LEFT + data.length * BW + (data.length - 1) * GAP + RIGHT_PAD;
-  const H = isMobile ? 320 : isTablet ? 370 : 420;
-  const TOP = 46;
-  const y = (v) => TOP + H - (v / chartMax) * H;
-
-  const gridLines = [];
-  for (let v = 0; v <= chartMax; v += gridStep) gridLines.push(v);
-
   const handleColumnInteract = useCallback((i) => {
     setActiveIdx(prev => prev === i ? null : i);
   }, []);
-
-  const fs = {
-    axisLabel: isMobile ? 9 : 11, gridLabel: isMobile ? 8 : 10,
-    medianLabel: isMobile ? 9 : 11, pctLabel: isMobile ? 7 : 9,
-    youLabel: isMobile ? 8 : 9, salaryLabel: isMobile ? 9 : 11,
-  };
-  const dotR = isMobile ? 3 : 4;
-  const medR = isMobile ? 4.5 : 6;
 
   const fmtGrid = (v) => {
     if (v === 0) return isHours ? "0h" : "£0";
@@ -591,332 +417,43 @@ export default function EarningsDashboard() {
           </div>
         )}
 
-        {/* ── Chart ── */}
-        <div style={{ marginBottom: 8 }}>
-          <svg width="100%" height={TOP + H + 60}
-            viewBox={`0 0 ${actualW} ${TOP + H + 60}`}
-            preserveAspectRatio="xMidYMid meet"
-            style={{ display: "block", touchAction: "pan-y" }}>
+        <EarningsChart
+          activeIdx={activeIdx}
+          availableKeys={availableKeys}
+          containerWidth={cw}
+          data={data}
+          fmt={fmt}
+          fmtGrid={fmtGrid}
+          handleColumnInteract={handleColumnInteract}
+          isHours={isHours}
+          isHourly={isHourly}
+          isMobile={isMobile}
+          isTablet={isTablet}
+          isWeekly={isWeekly}
+          salary={salary}
+          setActiveIdx={setActiveIdx}
+          userGroupLabel={userGroupLabel}
+        />
 
-            {gridLines.map(v => (
-              <g key={v}>
-                <line x1={LEFT - 4} x2={actualW - RIGHT_PAD + 4} y1={y(v)} y2={y(v)} stroke={C.faint} strokeWidth={0.7} />
-                <text x={LEFT - 8} y={y(v) + 4} textAnchor="end" fill={C.dim}
-                  fontSize={fs.gridLabel} fontFamily="'DM Sans', sans-serif">
-                  {fmtGrid(v)}
-                </text>
-              </g>
-            ))}
-
-            {salary && (() => {
-              const salaryY = Math.max(TOP + 4, y(salary));
-              const clamped = salary > chartMax;
-              return (
-              <>
-                <line x1={LEFT - 4} x2={actualW - RIGHT_PAD + 4}
-                  y1={salaryY} y2={salaryY}
-                  stroke={C.red} strokeWidth={1.5} strokeDasharray="7,4" opacity={0.7} />
-                <text x={actualW - RIGHT_PAD + 2} y={salaryY - 6} textAnchor="end"
-                  fill={C.red} fontSize={fs.salaryLabel} fontWeight={600}
-                  fontFamily="'DM Sans', sans-serif">
-                  {isMobile ? fmt(salary) : `You: ${fmt(salary)}`}{clamped ? " ▲" : ""}
-                </text>
-              </>
-              );
-            })()}
-
-            {data.map((d, i) => {
-              const x = LEFT + i * (BW + GAP);
-              const isUser = d.label === userGroupLabel;
-              const isActive = activeIdx === i;
-              const acc = isUser ? C.gold : C.blue;
-              const pts = availableKeys
-                .map(k => ({ key: k, val: d[k], lbl: PL[k], p: PV[k] }))
-                .filter(p => p.val != null);
-              const showDetail = isActive;
-
-              return (
-                <g key={d.label}
-                  onMouseEnter={() => !isMobile && setActiveIdx(i)}
-                  onMouseLeave={() => !isMobile && setActiveIdx(null)}
-                  onClick={() => handleColumnInteract(i)}
-                  style={{ cursor: "pointer" }}>
-
-                  <rect x={x - GAP/2} y={TOP - 10} width={BW + GAP} height={H + 30} fill="transparent" />
-                  {isUser && <rect x={x - 3} y={TOP - 3} width={BW + 6} height={H + 6}
-                    rx={5} fill={C.gold + "08"} stroke={C.gold + "20"} strokeWidth={1} />}
-
-                  {pts.length >= 2 && (
-                    <line x1={x + BW/2} x2={x + BW/2}
-                      y1={y(pts[pts.length-1].val)} y2={y(pts[0].val)}
-                      stroke={acc} strokeWidth={1.5} opacity={0.15} />
-                  )}
-
-                  {d.p10 != null && d.p90 != null && (
-                    <rect x={x + Math.max(2, BW*0.12)} y={y(d.p90)}
-                      width={BW - Math.max(4, BW*0.24)}
-                      height={y(d.p10) - y(d.p90)} rx={3} fill={acc} opacity={0.06} />
-                  )}
-                  {d.p25 != null && d.p75 != null && (
-                    <rect x={x + Math.max(4, BW*0.18)} y={y(d.p75)}
-                      width={BW - Math.max(8, BW*0.36)}
-                      height={y(d.p25) - y(d.p75)} rx={2} fill={acc} opacity={0.12} />
-                  )}
-
-                  {pts.map(p => {
-                    const isMed = p.key === "median";
-                    const r = isMed ? medR : dotR;
-                    const cy = y(p.val);
-                    return (
-                      <g key={p.key}>
-                        <circle cx={x + BW/2} cy={cy} r={r}
-                          fill={isMed ? "#f5f0e8" : dotColor(p.key)}
-                          stroke={isMed ? acc : "none"} strokeWidth={isMed ? 2 : 0}
-                          opacity={isMed ? 0.95 : 0.75} />
-                        {showDetail ? (
-                          <text x={x + BW/2 + r + 3} y={cy + 3}
-                            fill={isMed ? "#f5f0e8" : C.muted}
-                            fontSize={isMed ? fs.medianLabel : fs.pctLabel}
-                            fontWeight={isMed ? 700 : 400}
-                            fontFamily="'DM Sans', sans-serif">
-                            {p.lbl}
-                          </text>
-                        ) : isMed ? (
-                          <text x={x + BW/2 + r + 3} y={cy + 3}
-                            fill="#f5f0e8" fontSize={fs.medianLabel} fontWeight={700}
-                            fontFamily="'DM Sans', sans-serif" opacity={0.85}>
-                            {isMobile ? (isHours ? `${p.val.toFixed(0)}h` : isHourly ? `£${p.val.toFixed(0)}` : isWeekly ? `£${Math.round(p.val)}` : `£${(p.val/1000).toFixed(0)}k`) : fmt(p.val)}
-                          </text>
-                        ) : null}
-                      </g>
-                    );
-                  })}
-
-                  {isUser && salary && (() => {
-                    const dotY = Math.max(TOP + 4, y(salary));
-                    return (
-                    <>
-                      <circle cx={x + BW/2} cy={dotY} r={isMobile ? 6 : 8}
-                        fill={C.red} stroke={C.bg} strokeWidth={2.5} />
-                      <circle cx={x + BW/2} cy={dotY} r={isMobile ? 10 : 13}
-                        fill="none" stroke={C.red} strokeWidth={1.5} opacity={0.25}>
-                        <animate attributeName="r" from={isMobile?"8":"10"} to={isMobile?"13":"16"} dur="2s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" from="0.35" to="0" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                    </>
-                    );
-                  })()}
-
-                  <text x={x + BW/2} y={TOP + H + 18} textAnchor="middle"
-                    fill={isUser ? C.gold : C.muted}
-                    fontSize={fs.axisLabel} fontWeight={isUser ? 700 : 400}
-                    fontFamily="'DM Sans', sans-serif">
-                    {d.label}
-                  </text>
-                  {isUser && (
-                    <text x={x + BW/2} y={TOP + H + (isMobile ? 30 : 32)} textAnchor="middle"
-                      fill={C.gold} fontSize={fs.youLabel} fontWeight={600}
-                      fontFamily="'DM Sans', sans-serif" letterSpacing="0.06em">
-                      ▲ YOU
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-
-        {/* Legend */}
-        <div style={{
-          display: "flex", gap: isMobile ? 10 : 16, flexWrap: "wrap",
-          fontSize: isMobile ? 10 : 11, color: C.muted, marginBottom: 6, paddingLeft: 4,
-        }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#f5f0e8", border: `2px solid ${C.blue}`, display: "inline-block" }} /> Median
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.blue, opacity: 0.75, display: "inline-block" }} /> Percentile
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 7, borderRadius: 2, background: C.blue, opacity: 0.12, display: "inline-block" }} /> P25–P75
-          </span>
-          {salary && (
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 10, height: 0, borderTop: `2px dashed ${C.red}`, display: "inline-block" }} /> {isHours ? "Your hours" : "Your pay"}
-            </span>
-          )}
-        </div>
-        {isMobile && (
-          <p style={{ fontSize: 10, color: C.dim, textAlign: "center", margin: "4px 0 0" }}>
-            Tap a column to see percentile labels
-          </p>
-        )}
-
-        {/* ── Results card ── */}
-        {age && salary && userGroup ? (
-          <div style={{
-            marginTop: 20,
-            padding: isMobile ? "16px 16px" : "22px 26px",
-            background: C.card, borderRadius: 12, border: `1px solid ${C.border}`,
-          }}>
-            <div style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: isMobile ? 16 : 18, color: C.gold, marginBottom: 10,
-            }}>Where you stand</div>
-            <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: "#c5c0b6" }}>
-              {(() => {
-                const med = userGroup.median;
-                const diff = salary - med;
-                const pctDiff = Math.round(Math.abs(diff) / med * 100);
-                return (
-                  <>
-                    At <strong style={{ color: C.red }}>{fmt(salary)}{periodUnit}</strong> aged{" "}
-                    <strong style={{ color: C.gold }}>{age}</strong>, you fall in the{" "}
-                    <strong style={{ color: C.text }}>{userGroupLabel}</strong> age group.
-                    {" "}The median {periodLabel}{isHours ? "" : " gross pay"} for {cohortDesc} in this group is{" "}
-                    <strong style={{ color: C.text }}>{fmt(med)}</strong>.
-                    {diff > 0
-                      ? <>{" "}You're {isHours ? "working" : "earning"} <strong style={{ color: isHours ? C.red : C.green }}>{fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "more than" : "above"}</strong> the median.{isHours && pctDiff > 15 && " That’s significantly more hours than most."}</>
-                      : diff < 0
-                      ? <>{" "}You're {isHours ? "working" : "earning"} <strong style={{ color: isHours ? C.green : C.red }}>{fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "fewer than" : "below"}</strong> the median.</>
-                      : <>{" "}You're <strong>right on</strong> the median.</>
-                    }
-                    {pctResult && (
-                      pctResult.below
-                        ? <>{" "}That places you <strong style={{ color: C.gold }}>below the {pctResult.value}th percentile</strong> — {isHours ? "working fewer hours than roughly" : "earning less than roughly"} {100 - pctResult.value}% of {cohortDesc} in your age bracket.</>
-                        : pctResult.above
-                        ? <>{" "}That places you <strong style={{ color: C.gold }}>above the {pctResult.value}th percentile</strong> — {isHours ? "working more hours than at least" : "earning more than at least"} {pctResult.value}% of {cohortDesc} in your age bracket.</>
-                        : <>{" "}That puts you at roughly the <strong style={{ color: C.gold }}>{pctResult.value}th percentile</strong> — {isHours ? "working more hours than about" : "earning more than about"} {pctResult.value}% of {cohortDesc} in your age bracket.</>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Percentile grid */}
-            <div style={{
-              marginTop: 14, padding: isMobile ? "10px 10px" : "14px 16px",
-              background: C.bg, borderRadius: 8,
-              display: "grid",
-              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(110px, 1fr))",
-              gap: isMobile ? "4px 10px" : "5px 14px",
-              fontSize: isMobile ? 11 : 12,
-            }}>
-              {availableKeys.map(k => {
-                const val = userGroup[k];
-                if (val == null) return null;
-                const isAbove = salary >= val;
-                const isNearest = pctResult && !pctResult.below && !pctResult.above &&
-                  Math.abs(PV[k] - pctResult.value) <= 5;
-                return (
-                  <div key={k} style={{
-                    display: "flex", justifyContent: "space-between",
-                    padding: "4px 6px", borderRadius: 4,
-                    background: isNearest ? C.gold + "15" : "transparent",
-                  }}>
-                    <span style={{ color: C.muted }}>{PL[k]}</span>
-                    <span style={{
-                      color: isNearest ? C.gold : (isAbove ? C.green + "bb" : C.muted),
-                      fontWeight: isNearest ? 600 : 400,
-                      fontVariantNumeric: "tabular-nums",
-                    }}>{fmt(val)}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Pay composition breakdown */}
-            {compData && !isHours && (
-              <div style={{ marginTop: 16 }}>
-                <div style={{
-                  fontSize: isMobile ? 12 : 13, color: C.muted, marginBottom: 10,
-                  fontWeight: 500,
-                }}>Average weekly pay breakdown · {userGroupLabel} age group</div>
-                <CompBar data={compData} isMobile={isMobile} C={C} />
-              </div>
-            )}
-
-            {/* Net pay estimate */}
-            {!isHours && salary && (() => {
-              const annualGross = isHourly ? salary * (parseFloat(hoursPay) || 37.5) * 52
-                : isWeekly ? salary * 52 : salary;
-              const tp = calcNetPay(annualGross);
-              if (!tp) return null;
-              const netWeekly = Math.round(tp.net / 52);
-              const netMonthly = Math.round(tp.net / 12);
-              const barTotal = tp.net + tp.tax + tp.ni;
-              const parts = [
-                { label: "Take-home", value: tp.net, color: "#4ecb71" },
-                { label: "Income tax", value: tp.tax, color: "#e05c3a" },
-                { label: "National Insurance", value: tp.ni, color: "#d4a843" },
-              ];
-              return (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{
-                    fontSize: isMobile ? 12 : 13, color: C.muted, marginBottom: 10,
-                    fontWeight: 500,
-                  }}>Estimated take-home pay · 2025/26 rates</div>
-                  <div style={{
-                    display: "flex", height: isMobile ? 20 : 24, borderRadius: 6, overflow: "hidden",
-                    background: C.faint, marginBottom: 8,
-                  }}>
-                    {parts.map((p, i) => (
-                      <div key={p.label} style={{
-                        width: `${(p.value / barTotal * 100).toFixed(1)}%`,
-                        background: p.color, opacity: 0.75,
-                        borderRight: i < parts.length - 1 ? `1px solid ${C.bg}` : "none",
-                      }} />
-                    ))}
-                  </div>
-                  <div style={{
-                    display: "flex", gap: isMobile ? 6 : 14, flexWrap: "wrap",
-                    fontSize: isMobile ? 11 : 12, color: C.muted,
-                  }}>
-                    {parts.map(p => (
-                      <span key={p.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, opacity: 0.75, display: "inline-block" }} />
-                        {p.label}: <strong style={{ color: C.text }}>£{p.value.toLocaleString("en-GB")}</strong>
-                        <span style={{ color: C.dim }}>({Math.round(p.value / barTotal * 100)}%)</span>
-                      </span>
-                    ))}
-                  </div>
-                  <div style={{
-                    marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.faint}`,
-                    display: "flex", gap: isMobile ? 10 : 20, flexWrap: "wrap",
-                    fontSize: isMobile ? 11 : 12, color: C.muted,
-                  }}>
-                    <span>Monthly: <strong style={{ color: "#4ecb71" }}>£{netMonthly.toLocaleString("en-GB")}</strong></span>
-                    <span>Weekly: <strong style={{ color: "#4ecb71" }}>£{netWeekly.toLocaleString("en-GB")}</strong></span>
-                    <span>Effective rate: <strong style={{ color: C.text }}>{tp.effectiveRate}%</strong></span>
-                  </div>
-                  {(isHourly || isWeekly) && (
-                    <div style={{
-                      marginTop: 6, fontSize: isMobile ? 10 : 11, color: C.dim, fontStyle: "italic",
-                    }}>
-                      {isHourly
-                        ? `Based on ${parseFloat(hoursPay) || 37.5}hrs/wk × 52 weeks = £${annualGross.toLocaleString("en-GB")} annual gross`
-                        : `Based on £${salary.toLocaleString("en-GB")}/wk × 52 = £${annualGross.toLocaleString("en-GB")} annual gross`
-                      }
-                    </div>
-                  )}
-                  <div style={{
-                    marginTop: 6, fontSize: isMobile ? 9 : 10, color: C.dim,
-                  }}>
-                    Estimate only. Assumes standard tax code (1257L), no pension, no student loan.
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        ) : (
-          <div style={{
-            marginTop: 20, padding: "18px 20px",
-            background: C.card, borderRadius: 12, border: `1px solid ${C.border}`,
-            color: C.muted, fontSize: 14, textAlign: "center",
-          }}>
-            Enter your age and {isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary"} above to see where you fall.
-          </div>
-        )}
+        <InsightCard
+          age={age}
+          availableKeys={availableKeys}
+          cohortDesc={cohortDesc}
+          compData={compData}
+          fmt={fmt}
+          hoursPay={hoursPay}
+          isHours={isHours}
+          isHourly={isHourly}
+          isMobile={isMobile}
+          isTablet={isTablet}
+          isWeekly={isWeekly}
+          periodLabel={periodLabel}
+          periodUnit={periodUnit}
+          pctResult={pctResult}
+          salary={salary}
+          userGroup={userGroup}
+          userGroupLabel={userGroupLabel}
+        />
 
         <p style={{
           fontSize: isMobile ? 9 : 10, color: "#3a3830",
