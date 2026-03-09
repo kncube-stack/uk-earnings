@@ -1,6 +1,42 @@
 import { PL, PV } from "../percentiles";
 import { C, dotColor } from "../theme";
 
+function wrapAxisLabel(label, maxCharsPerLine, maxLines = 2) {
+  if (!label) return [""];
+
+  const words = String(label)
+    .replace(/\s*&\s*/g, " & ")
+    .trim()
+    .split(/\s+/);
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length <= maxCharsPerLine || !current) {
+      current = next;
+      continue;
+    }
+
+    lines.push(current);
+    current = word;
+    if (lines.length === maxLines - 1) break;
+  }
+
+  const remainingWords = words.slice(lines.join(" ").split(/\s+/).filter(Boolean).length);
+  const tail = [current, ...remainingWords].filter(Boolean).join(" ").trim();
+  if (tail) lines.push(tail);
+
+  const trimmed = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    trimmed[maxLines - 1] = `${trimmed[maxLines - 1].slice(0, Math.max(0, maxCharsPerLine - 1)).trimEnd()}…`;
+  } else if (trimmed[maxLines - 1]?.length > maxCharsPerLine + 2) {
+    trimmed[maxLines - 1] = `${trimmed[maxLines - 1].slice(0, Math.max(0, maxCharsPerLine - 1)).trimEnd()}…`;
+  }
+
+  return trimmed;
+}
+
 export default function EarningsChart({
   activeIdx,
   availableKeys,
@@ -21,11 +57,21 @@ export default function EarningsChart({
   const left = isMobile ? 44 : 64;
   const rightPad = isMobile ? 12 : 30;
   const usableWidth = Math.max(200, containerWidth - 8 - left - rightPad);
-  const barWidth = Math.max(28, Math.min(74, Math.floor(usableWidth / data.length) - (isMobile ? 6 : 16)));
-  const gap = Math.max(4, Math.min(20, Math.floor((usableWidth - barWidth * data.length) / Math.max(1, data.length - 1))));
+  const longestAxisLabel = Math.max(...data.map((row) => String(row.shortLabel ?? row.label ?? "").length), 0);
+  const denseAxis = data.length >= 10 || longestAxisLabel >= 12;
+  const minBarWidth = denseAxis ? (isMobile ? 42 : 50) : 28;
+  const maxBarWidth = denseAxis ? (isMobile ? 64 : 90) : 74;
+  const barWidth = Math.max(minBarWidth, Math.min(maxBarWidth, Math.floor(usableWidth / data.length) - (isMobile ? 6 : 16)));
+  const minGap = denseAxis ? (isMobile ? 8 : 10) : 4;
+  const gap = Math.max(minGap, Math.min(20, Math.floor((usableWidth - barWidth * data.length) / Math.max(1, data.length - 1))));
   const actualWidth = left + data.length * barWidth + (data.length - 1) * gap + rightPad;
   const height = isMobile ? 320 : isTablet ? 370 : 420;
   const top = 46;
+  const labelMaxChars = denseAxis ? (isMobile ? 8 : 11) : 12;
+  const labelLineHeight = isMobile ? 10 : 12;
+  const labelLineCount = denseAxis ? 2 : 1;
+  const bottomPad = isMobile ? 74 : denseAxis ? 82 : 60;
+  const chartScrollable = actualWidth > containerWidth;
 
   const dataMax = Math.max(...data.flatMap((row) => availableKeys.map((key) => row[key]).filter(Boolean)));
   const scaleMax = Math.max(dataMax, Math.min(salary || 0, dataMax * 1.35));
@@ -65,8 +111,8 @@ export default function EarningsChart({
       <div style={{ marginBottom: 8, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
         <svg
           width={Math.max(actualWidth, containerWidth - 8)}
-          height={top + height + 60}
-          viewBox={`0 0 ${actualWidth} ${top + height + 60}`}
+          height={top + height + bottomPad}
+          viewBox={`0 0 ${actualWidth} ${top + height + bottomPad}`}
           preserveAspectRatio="xMinYMid meet"
           style={{ display: "block", touchAction: "pan-y", minWidth: "100%" }}
         >
@@ -142,6 +188,7 @@ export default function EarningsChart({
                 onClick={() => handleColumnInteract(index)}
                 style={{ cursor: "pointer" }}
               >
+                <title>{row.label}</title>
                 <rect x={x - gap / 2} y={top - 10} width={barWidth + gap} height={height + 30} fill="transparent" />
                 {isUser && (
                   <rect
@@ -264,12 +311,20 @@ export default function EarningsChart({
                   fontWeight={isUser ? 700 : 400}
                   fontFamily="'DM Sans', sans-serif"
                 >
-                  {row.shortLabel ?? row.label}
+                  {wrapAxisLabel(row.shortLabel ?? row.label, labelMaxChars, labelLineCount).map((line, lineIndex) => (
+                    <tspan
+                      key={`${rowId}-line-${lineIndex}`}
+                      x={x + barWidth / 2}
+                      dy={lineIndex === 0 ? 0 : labelLineHeight}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
                 {isUser && (
                   <text
                     x={x + barWidth / 2}
-                    y={top + height + (isMobile ? 30 : 32)}
+                    y={top + height + 22 + labelLineCount * labelLineHeight}
                     textAnchor="middle"
                     fill={C.gold}
                     fontSize={fontSizes.youLabel}
@@ -345,7 +400,7 @@ export default function EarningsChart({
 
       {isMobile && (
         <p style={{ fontSize: 10, color: C.dim, textAlign: "center", margin: "4px 0 0" }}>
-          Tap a column to see percentile labels
+          {chartScrollable ? "Swipe sideways if labels need more room. Tap a column to see percentile labels." : "Tap a column to see percentile labels."}
         </p>
       )}
     </>
