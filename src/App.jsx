@@ -459,19 +459,19 @@ export default function EarningsDashboard() {
         setSelectorValue: setSelectedOccupation,
         selectorNote: isGapMode
           ? gapOccupationDetailStatus === "loading"
-            ? "Loading official ONS Table 14 gender pay gap detail."
+            ? "Loading detailed four-digit SOC job codes from ONS Table 14."
             : selectedOccupationDetail
-              ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 14."
+              ? "Showing official four-digit SOC detail from ONS ASHE Table 14."
               : selectedOccupationAgeBand
-                ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 20."
-                : "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 2."
+                ? "Age bands come from ONS ASHE Table 20 and stay at the major occupation-group level."
+                : "Occupation groups use official ONS ASHE Table 2 and can drill into Table 14 job detail."
           : occupationDetailStatus === "loading"
-            ? "Loading official ONS Table 14 job detail."
+            ? "Loading detailed four-digit SOC job codes from ONS Table 14."
             : selectedOccupationDetail
-              ? "Detailed occupation view uses official ONS 4-digit SOC job data from ASHE Table 14."
+              ? "Showing official four-digit SOC detail from ONS ASHE Table 14."
               : selectedOccupationAgeBand
-                ? "Occupation view uses official ONS SOC20 major occupation groups with age-band refinement from ASHE Table 20. Four-digit job detail is only published here for all ages."
-                : "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2, with optional 4-digit drill-down from Table 14.",
+                ? "Age bands come from ONS ASHE Table 20 and stay at the major occupation-group level."
+                : "Occupation groups use official ONS ASHE Table 2 and can drill into Table 14 job detail.",
       }
     : isIndustryView
       ? {
@@ -627,6 +627,17 @@ export default function EarningsDashboard() {
   const gapBenchmark = GAP_BENCHMARKS[gapDataKey];
   const currentOccupationDetailOptions = isGapMode ? gapOccupationDetailOptions : occupationDetailOptions;
   const currentOccupationDetailStatus = isGapMode ? gapOccupationDetailStatus : occupationDetailStatus;
+  const specialCaseNote = isOccupationView && selectedOccupation
+    ? selectedOccupationAgeBand
+      ? "Job detail is available only in All ages mode because ONS publishes age bands for major occupation groups, not four-digit job codes."
+      : currentOccupationDetailStatus === "loading"
+        ? "Detailed job codes are loading from the official ONS Table 14 extract."
+        : currentOccupationDetailStatus === "error"
+          ? "Detailed job codes could not be loaded right now. The major occupation group is still available."
+          : selectedOccupationDetail
+            ? "You are viewing a four-digit SOC job code inside the selected occupation group."
+            : "Optional: refine this occupation group into a four-digit SOC job code."
+    : null;
 
   const comboAvailable = isGapMode
     ? data.length > 0
@@ -873,12 +884,33 @@ export default function EarningsDashboard() {
           )}
         </div>
 
-        {(!isAgeView || isGapMode) && (
-          <p style={{ color: C.dim, fontSize: isMobile ? 10 : 11, margin: "0 0 20px" }}>
+        {((!isAgeView || isGapMode) || specialCaseNote) && (
+          <div
+            style={{
+              marginBottom: 20,
+              padding: isMobile ? "10px 12px" : "11px 14px",
+              borderRadius: 10,
+              border: `1px solid ${C.border}`,
+              background: C.card,
+              color: C.muted,
+              fontSize: isMobile ? 10 : 11,
+              lineHeight: 1.5,
+            }}
+          >
+            <strong style={{ color: C.text, fontWeight: 600 }}>
+              {isGapMode ? "Official mode" : "View note"}
+            </strong>
+            {" "}
             {isGapMode
-              ? `Official mode: this always uses hourly pay excluding overtime. ${viewConfig?.selectorNote ?? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 6."}`
-              : viewConfig.selectorNote}
-          </p>
+              ? `This analysis always uses hourly pay excluding overtime. ${viewConfig?.selectorNote ?? "Age bands use official ONS ASHE Table 6."}`
+              : viewConfig?.selectorNote}
+            {specialCaseNote && (
+              <>
+                {" "}
+                <span style={{ color: C.dim }}>Constraint:</span> {specialCaseNote}
+              </>
+            )}
+          </div>
         )}
 
         {!comboAvailable && (
@@ -893,7 +925,7 @@ export default function EarningsDashboard() {
               fontSize: 12,
             }}
           >
-            This combination isn't published by ONS. Showing closest available data.
+            This exact split is not published in ASHE. The chart is showing the nearest official series available for this view.
           </div>
         )}
 
@@ -907,6 +939,7 @@ export default function EarningsDashboard() {
               handleColumnInteract={handleColumnInteract}
               isMobile={isMobile}
               isTablet={isTablet}
+              selectionType={view}
               selectedBucketId={selectedBucketId}
               setActiveIdx={setActiveIdx}
             />
@@ -935,6 +968,7 @@ export default function EarningsDashboard() {
               isTablet={isTablet}
               isWeekly={isWeekly}
               salary={salary}
+              selectionType={view}
               selectedBucketId={selectedBucketId}
               setActiveIdx={setActiveIdx}
             />

@@ -1,6 +1,6 @@
 import { PL, PV } from "../percentiles";
 import { C, dotColor } from "../theme";
-import { wrapAxisLabel } from "../utils/chartLabels";
+import { getAxisDensity, getAxisLabelLines, getMobileChartHint } from "../utils/chartLabels";
 
 export default function EarningsChart({
   activeIdx,
@@ -16,26 +16,26 @@ export default function EarningsChart({
   isTablet,
   isWeekly,
   salary,
+  selectionType,
   selectedBucketId,
   setActiveIdx,
 }) {
   const left = isMobile ? 44 : 64;
   const rightPad = isMobile ? 12 : 30;
   const usableWidth = Math.max(200, containerWidth - 8 - left - rightPad);
-  const longestAxisLabel = Math.max(...data.map((row) => String(row.shortLabel ?? row.label ?? "").length), 0);
-  const denseAxis = data.length >= 10 || longestAxisLabel >= 12;
-  const minBarWidth = denseAxis ? (isMobile ? 50 : 58) : 28;
-  const maxBarWidth = denseAxis ? (isMobile ? 64 : 90) : 74;
+  const { compactMobile, curatedDenseView, denseAxis, detailAxis } = getAxisDensity({ data, isMobile, selectionType });
+  const minBarWidth = detailAxis ? (isMobile ? 52 : 58) : denseAxis ? (isMobile ? 58 : 62) : 28;
+  const maxBarWidth = detailAxis ? (isMobile ? 64 : 90) : denseAxis ? (isMobile ? 72 : 94) : 74;
   const barWidth = Math.max(minBarWidth, Math.min(maxBarWidth, Math.floor(usableWidth / data.length) - (isMobile ? 6 : 16)));
   const minGap = denseAxis ? (isMobile ? 8 : 10) : 4;
   const gap = Math.max(minGap, Math.min(20, Math.floor((usableWidth - barWidth * data.length) / Math.max(1, data.length - 1))));
   const actualWidth = left + data.length * barWidth + (data.length - 1) * gap + rightPad;
-  const height = isMobile ? 320 : isTablet ? 370 : 420;
+  const height = compactMobile ? 292 : isMobile ? 320 : isTablet ? 370 : 420;
   const top = 46;
-  const labelMaxChars = denseAxis ? (isMobile ? 9 : 12) : 12;
-  const labelLineHeight = isMobile ? 10 : 12;
-  const labelLineCount = denseAxis ? 2 : 1;
-  const bottomPad = isMobile ? 74 : denseAxis ? 82 : 60;
+  const labelMaxChars = detailAxis ? 8 : denseAxis ? (isMobile ? 10 : 14) : 12;
+  const labelLineHeight = compactMobile ? 9 : isMobile ? 10 : 12;
+  const labelLineCount = detailAxis ? 1 : denseAxis ? 2 : 1;
+  const bottomPad = compactMobile ? 86 : isMobile ? 74 : denseAxis ? 82 : 60;
   const chartScrollable = actualWidth > containerWidth;
 
   const dataMax = Math.max(...data.flatMap((row) => availableKeys.map((key) => row[key]).filter(Boolean)));
@@ -61,7 +61,7 @@ export default function EarningsChart({
   }
 
   const fontSizes = {
-    axisLabel: isMobile ? 9 : 11,
+    axisLabel: compactMobile ? 8 : isMobile ? 9 : 11,
     gridLabel: isMobile ? 8 : 10,
     medianLabel: isMobile ? 9 : 11,
     pctLabel: isMobile ? 7 : 9,
@@ -70,9 +70,32 @@ export default function EarningsChart({
   };
   const dotRadius = isMobile ? 3 : 4;
   const medianRadius = isMobile ? 4.5 : 6;
+  const showDefaultMedianLabels = !(compactMobile && denseAxis);
 
   return (
     <>
+      {(curatedDenseView || compactMobile) && (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+            padding: "5px 9px",
+            borderRadius: 999,
+            border: `1px solid ${C.border}`,
+            background: C.card,
+            color: C.muted,
+            fontSize: isMobile ? 10 : 11,
+          }}
+        >
+          {compactMobile ? "Compact chart mode" : "Curated labels"}
+          <span style={{ color: C.dim }}>
+            {detailAxis ? "Codes stay short on the axis." : "Labels are shortened for readability."}
+          </span>
+        </div>
+      )}
+
       <div style={{ marginBottom: 8, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
         <svg
           width={Math.max(actualWidth, containerWidth - 8)}
@@ -229,7 +252,7 @@ export default function EarningsChart({
                         >
                           {point.lbl}
                         </text>
-                      ) : isMedian ? (
+                      ) : isMedian && showDefaultMedianLabels ? (
                         <text
                           x={x + barWidth / 2 + radius + 3}
                           y={cy + 3}
@@ -276,7 +299,12 @@ export default function EarningsChart({
                   fontWeight={isUser ? 700 : 400}
                   fontFamily="'DM Sans', sans-serif"
                 >
-                  {wrapAxisLabel(row.shortLabel ?? row.label, labelMaxChars, labelLineCount).map((line, lineIndex) => (
+                  {getAxisLabelLines(row, {
+                    isMobile,
+                    maxCharsPerLine: labelMaxChars,
+                    maxLines: labelLineCount,
+                    selectionType,
+                  }).map((line, lineIndex) => (
                     <tspan
                       key={`${rowId}-line-${lineIndex}`}
                       x={x + barWidth / 2}
@@ -365,7 +393,7 @@ export default function EarningsChart({
 
       {isMobile && (
         <p style={{ fontSize: 10, color: C.dim, textAlign: "center", margin: "4px 0 0" }}>
-          {chartScrollable ? "Swipe sideways if labels need more room. Tap a column to see percentile labels." : "Tap a column to see percentile labels."}
+          {getMobileChartHint({ chartScrollable, compactMobile, isGapMode: false })}
         </p>
       )}
     </>

@@ -54,6 +54,12 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Used the official ONS formula: `(men's median hourly pay excluding overtime - women's median hourly pay excluding overtime) / men's median hourly pay excluding overtime`.
 - Preserved mobile usability by keeping the filter stack compact and using a dedicated dumbbell-style comparison chart rather than overloading the existing percentile chart.
 
+### Phase 7
+
+- Added view-aware label handling for dense chart states so `Region`, `Industry`, `Sector`, and other crowded category views use curated shorter labels instead of one generic wrap rule.
+- Added a more deliberate compact mobile chart mode with reduced annotation clutter and clearer swipe/tap guidance.
+- Reworked special-case explanatory copy so constraints like age-band versus four-digit job detail read as intentional data-source limits rather than broken UI behavior.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.

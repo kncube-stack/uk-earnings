@@ -1,5 +1,5 @@
 import { C } from "../theme";
-import { wrapAxisLabel } from "../utils/chartLabels";
+import { getAxisDensity, getAxisLabelLines, getMobileChartHint } from "../utils/chartLabels";
 
 export default function GenderGapChart({
   activeIdx,
@@ -9,25 +9,25 @@ export default function GenderGapChart({
   handleColumnInteract,
   isMobile,
   isTablet,
+  selectionType,
   selectedBucketId,
   setActiveIdx,
 }) {
   const left = isMobile ? 46 : 68;
   const rightPad = isMobile ? 14 : 32;
   const usableWidth = Math.max(220, containerWidth - 8 - left - rightPad);
-  const longestAxisLabel = Math.max(...data.map((row) => String(row.shortLabel ?? row.label ?? "").length), 0);
-  const denseAxis = data.length >= 8 || longestAxisLabel >= 12;
-  const minBarWidth = denseAxis ? (isMobile ? 52 : 60) : 42;
-  const maxBarWidth = denseAxis ? (isMobile ? 72 : 96) : 84;
+  const { compactMobile, curatedDenseView, denseAxis, detailAxis } = getAxisDensity({ data, isMobile, selectionType });
+  const minBarWidth = detailAxis ? (isMobile ? 48 : 56) : denseAxis ? (isMobile ? 54 : 60) : 42;
+  const maxBarWidth = detailAxis ? (isMobile ? 68 : 84) : denseAxis ? (isMobile ? 76 : 96) : 84;
   const barWidth = Math.max(minBarWidth, Math.min(maxBarWidth, Math.floor(usableWidth / Math.max(1, data.length)) - (isMobile ? 6 : 12)));
   const gap = Math.max(denseAxis ? (isMobile ? 10 : 12) : 6, Math.min(24, Math.floor((usableWidth - barWidth * data.length) / Math.max(1, data.length - 1))));
   const actualWidth = left + data.length * barWidth + (data.length - 1) * gap + rightPad;
-  const height = isMobile ? 320 : isTablet ? 370 : 420;
+  const height = compactMobile ? 292 : isMobile ? 320 : isTablet ? 370 : 420;
   const top = 40;
-  const labelMaxChars = denseAxis ? (isMobile ? 9 : 12) : 12;
-  const labelLineHeight = isMobile ? 10 : 12;
-  const labelLineCount = denseAxis ? 2 : 1;
-  const bottomPad = isMobile ? 82 : denseAxis ? 90 : 68;
+  const labelMaxChars = detailAxis ? 8 : denseAxis ? (isMobile ? 10 : 14) : 12;
+  const labelLineHeight = compactMobile ? 9 : isMobile ? 10 : 12;
+  const labelLineCount = detailAxis ? 1 : denseAxis ? 2 : 1;
+  const bottomPad = compactMobile ? 92 : isMobile ? 82 : denseAxis ? 90 : 68;
   const chartScrollable = actualWidth > containerWidth;
 
   const valueMax = Math.max(
@@ -45,6 +45,28 @@ export default function GenderGapChart({
 
   return (
     <>
+      {(curatedDenseView || compactMobile) && (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+            padding: "5px 9px",
+            borderRadius: 999,
+            border: `1px solid ${C.border}`,
+            background: C.card,
+            color: C.muted,
+            fontSize: isMobile ? 10 : 11,
+          }}
+        >
+          {compactMobile ? "Compact chart mode" : "Curated labels"}
+          <span style={{ color: C.dim }}>
+            {detailAxis ? "The axis stays in code form; full titles are in the selector." : "Labels are shortened for readability."}
+          </span>
+        </div>
+      )}
+
       <div style={{ marginBottom: 8, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
         <svg
           width={Math.max(actualWidth, containerWidth - 8)}
@@ -190,7 +212,12 @@ export default function GenderGapChart({
                   fontWeight={isUser ? 700 : 400}
                   fontFamily="'DM Sans', sans-serif"
                 >
-                  {wrapAxisLabel(row.shortLabel ?? row.label, labelMaxChars, labelLineCount).map((line, lineIndex) => (
+                  {getAxisLabelLines(row, {
+                    isMobile,
+                    maxCharsPerLine: labelMaxChars,
+                    maxLines: labelLineCount,
+                    selectionType,
+                  }).map((line, lineIndex) => (
                     <tspan
                       key={`${rowId}-line-${lineIndex}`}
                       x={x + barWidth / 2}
@@ -271,7 +298,7 @@ export default function GenderGapChart({
 
       {isMobile && (
         <p style={{ fontSize: 10, color: C.dim, textAlign: "center", margin: "4px 0 0" }}>
-          {chartScrollable ? "Swipe sideways if labels need more room. Tap a category for exact values." : "Tap a category for exact values."}
+          {getMobileChartHint({ chartScrollable, compactMobile, isGapMode: true })}
         </p>
       )}
     </>
