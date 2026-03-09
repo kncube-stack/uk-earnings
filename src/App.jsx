@@ -4,7 +4,10 @@ import EarningsChart from "./components/EarningsChart";
 import InsightCard from "./components/InsightCard";
 import Pill from "./components/Pill";
 import { INDUSTRY_DATA, INDUSTRY_OPTIONS } from "./data/asheIndustry";
+import { AGE_OCCUPATION_DATA, OCCUPATION_AGE_BANDS } from "./data/asheOccupationByAge";
 import { OCCUPATION_DATA, OCCUPATION_OPTIONS } from "./data/asheOccupation";
+import { REGION_DATA, REGION_OPTIONS } from "./data/asheRegion";
+import { SECTOR_DATA, SECTOR_OPTIONS } from "./data/asheSector";
 import { useContainerWidth } from "./hooks/useContainerWidth";
 import { PK } from "./percentiles";
 import { C } from "./theme";
@@ -261,7 +264,10 @@ export default function EarningsDashboard() {
   const [work, setWork] = useState("all");
   const [userAge, setUserAge] = useState("");
   const [selectedOccupation, setSelectedOccupation] = useState("");
+  const [selectedOccupationAgeBand, setSelectedOccupationAgeBand] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedSector, setSelectedSector] = useState("");
   const [annualPay, setAnnualPay] = useState("");
   const [weeklyPay, setWeeklyPay] = useState("");
   const [hourlyPay, setHourlyPay] = useState("");
@@ -276,6 +282,8 @@ export default function EarningsDashboard() {
   const isAgeView = view === "age";
   const isOccupationView = view === "occupation";
   const isIndustryView = view === "industry";
+  const isRegionView = view === "region";
+  const isSectorView = view === "sector";
 
   // Derive the data key
   const dataKey = useMemo(() => {
@@ -289,8 +297,61 @@ export default function EarningsDashboard() {
     return "all";
   }, [gender, work]);
 
-  const sourceData = isOccupationView ? OCCUPATION_DATA : isIndustryView ? INDUSTRY_DATA : DATA;
-  const data = sourceData[period][dataKey] || sourceData[period].all;
+  const viewConfig = isOccupationView
+    ? {
+        selectorLabel: "Occupation group",
+        selectorKind: "occupation group",
+        selectorOptions: OCCUPATION_OPTIONS,
+        selectorValue: selectedOccupation,
+        setSelectorValue: setSelectedOccupation,
+        selectorNote: selectedOccupationAgeBand
+          ? "Occupation view uses official ONS SOC20 major occupation groups with age-band refinement from ASHE Table 20."
+          : "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2.",
+      }
+    : isIndustryView
+      ? {
+          selectorLabel: "Industry section",
+          selectorKind: "industry section",
+          selectorOptions: INDUSTRY_OPTIONS,
+          selectorValue: selectedIndustry,
+          setSelectorValue: setSelectedIndustry,
+          selectorNote: "Industry view uses official ONS SIC2007 section groupings from ASHE Table 4.",
+        }
+      : isRegionView
+        ? {
+            selectorLabel: "Region",
+            selectorKind: "region",
+            selectorOptions: REGION_OPTIONS,
+            selectorValue: selectedRegion,
+            setSelectorValue: setSelectedRegion,
+            selectorNote: "Region view uses official ONS UK workplace regions from ASHE Table 15.",
+          }
+        : isSectorView
+          ? {
+              selectorLabel: "Sector",
+              selectorKind: "sector",
+              selectorOptions: SECTOR_OPTIONS,
+              selectorValue: selectedSector,
+              setSelectorValue: setSelectedSector,
+              selectorNote: "Sector view uses official ONS public, private, non-profit, and unclassified groups from ASHE Table 13.",
+            }
+          : null;
+
+  const usesOccupationAgeBand = isOccupationView && selectedOccupationAgeBand;
+  const sourceData = usesOccupationAgeBand
+    ? AGE_OCCUPATION_DATA
+    : isOccupationView
+      ? OCCUPATION_DATA
+      : isIndustryView
+        ? INDUSTRY_DATA
+        : isRegionView
+          ? REGION_DATA
+          : isSectorView
+            ? SECTOR_DATA
+            : DATA;
+  const data = usesOccupationAgeBand
+    ? sourceData[period][dataKey]?.[selectedOccupationAgeBand] || []
+    : sourceData[period][dataKey] || sourceData[period].all;
   const isWeekly = period === "weekly";
 
   const rawAge = parseInt(userAge);
@@ -306,7 +367,11 @@ export default function EarningsDashboard() {
     ? selectedOccupation || null
     : isIndustryView
       ? selectedIndustry || null
-      : ageGroupLabel;
+      : isRegionView
+        ? selectedRegion || null
+        : isSectorView
+          ? selectedSector || null
+          : ageGroupLabel;
   const selectedBucket = data.find((row) => (row.id ?? row.label) === selectedBucketId);
   const selectedLabel = selectedBucket?.label ?? null;
   const pctResult = selectedBucket && salary ? estimatePercentile(selectedBucket, salary) : null;
@@ -338,22 +403,30 @@ export default function EarningsDashboard() {
   const genderLabel = { all: "all employees", male: "male employees", female: "female employees" }[gender] || "employees";
   const workLabel = { all: "", ft: " (full-time)", pt: " (part-time)" }[work] || "";
   const cohortDesc = `${genderLabel}${workLabel}`;
+  const occupationAgeBandLabel = selectedOccupationAgeBand || null;
   const periodLabel = isHours ? "weekly hours" : isHourly ? "hourly" : isWeekly ? "weekly" : "annual";
   const periodUnit = isHours ? "/wk" : isHourly ? "/hr" : isWeekly ? "/week" : "/year";
   const payPromptLabel = isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary";
-  const selectorLabel = isOccupationView ? "Occupation group" : "Industry section";
-  const selectorOptions = isOccupationView ? OCCUPATION_OPTIONS : INDUSTRY_OPTIONS;
-  const selectorValue = isOccupationView ? selectedOccupation : selectedIndustry;
-  const setSelectorValue = isOccupationView ? setSelectedOccupation : setSelectedIndustry;
-  const selectorNote = isOccupationView
-    ? "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2."
-    : "Industry view uses official ONS SIC2007 section groupings from ASHE Table 4.";
   const emptyPrompt = isAgeView
     ? `Enter your age and ${payPromptLabel} above to see where you fall.`
-    : `Choose an ${isOccupationView ? "occupation group" : "industry section"} and enter your ${payPromptLabel} above to see where you fall.`;
+    : `Choose a ${viewConfig.selectorKind} and enter your ${payPromptLabel} above to see where you fall.`;
+  const percentileContext = isAgeView
+    ? "in your age bracket."
+    : isIndustryView
+      ? "in this industry."
+      : isRegionView
+        ? "in this region."
+        : isSectorView
+          ? "in this sector."
+          : usesOccupationAgeBand
+            ? "in this age band and occupation group."
+            : "in this occupation group.";
+  const insightCohortDesc = usesOccupationAgeBand ? `${cohortDesc} aged ${occupationAgeBandLabel}` : cohortDesc;
 
   // Check if current combo is available
-  const comboAvailable = !!sourceData[period][dataKey];
+  const comboAvailable = usesOccupationAgeBand
+    ? !!sourceData[period][dataKey]?.[selectedOccupationAgeBand]
+    : !!sourceData[period][dataKey];
 
   return (
     <div style={{
@@ -409,12 +482,14 @@ export default function EarningsDashboard() {
             <Pill active={view==="age"} onClick={() => setView("age")} isMobile={isMobile}>Age</Pill>
             <Pill active={view==="occupation"} onClick={() => setView("occupation")} isMobile={isMobile}>Occupation</Pill>
             <Pill active={view==="industry"} onClick={() => setView("industry")} isMobile={isMobile}>Industry</Pill>
+            <Pill active={view==="region"} onClick={() => setView("region")} isMobile={isMobile}>Region</Pill>
+            <Pill active={view==="sector"} onClick={() => setView("sector")} isMobile={isMobile}>Sector</Pill>
           </div>
         </div>
 
         {/* ── User inputs ── */}
         <div style={{
-          display: "flex", gap: 10, marginBottom: !isAgeView ? 8 : 20, alignItems: "flex-end",
+          display: "flex", gap: 10, marginBottom: !isAgeView ? 8 : 20, alignItems: "flex-end", flexWrap: "wrap",
         }}>
           {isAgeView ? (
             <div style={{ width: isMobile ? "35%" : 60, flexShrink: 0 }}>
@@ -429,22 +504,44 @@ export default function EarningsDashboard() {
                 }} />
             </div>
           ) : (
-            <div style={{ width: isMobile ? "52%" : 320, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>{selectorLabel}</label>
+            <div style={{ width: isMobile ? "100%" : isOccupationView ? 320 : 260, flexShrink: 0 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>{viewConfig.selectorLabel}</label>
               <select
-                value={selectorValue}
-                onChange={(e) => setSelectorValue(e.target.value)}
+                value={viewConfig.selectorValue}
+                onChange={(e) => viewConfig.setSelectorValue(e.target.value)}
                 style={{
                   width: "100%", padding: "10px", borderRadius: 6,
                   border: `1px solid ${C.faint}`, background: C.card,
-                  color: selectorValue ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
+                  color: viewConfig.selectorValue ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
                   boxSizing: "border-box", appearance: "none",
                 }}
               >
                 <option value="">Select one</option>
-                {selectorOptions.map((option) => (
+                {viewConfig.selectorOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {isOccupationView && (
+            <div style={{ width: isMobile ? "calc(42% - 5px)" : 126, flexShrink: 0 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Age band</label>
+              <select
+                value={selectedOccupationAgeBand}
+                onChange={(e) => setSelectedOccupationAgeBand(e.target.value)}
+                style={{
+                  width: "100%", padding: "10px", borderRadius: 6,
+                  border: `1px solid ${C.faint}`, background: C.card,
+                  color: selectedOccupationAgeBand ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box", appearance: "none",
+                }}
+              >
+                <option value="">All ages</option>
+                {OCCUPATION_AGE_BANDS.map((ageBand) => (
+                  <option key={ageBand} value={ageBand}>
+                    {ageBand}
                   </option>
                 ))}
               </select>
@@ -466,7 +563,7 @@ export default function EarningsDashboard() {
         </div>
         {!isAgeView && (
           <p style={{ color: C.dim, fontSize: isMobile ? 10 : 11, margin: "0 0 20px" }}>
-            {selectorNote}
+            {viewConfig.selectorNote}
           </p>
         )}
 
@@ -502,7 +599,7 @@ export default function EarningsDashboard() {
         <InsightCard
           age={age}
           availableKeys={availableKeys}
-          cohortDesc={cohortDesc}
+          cohortDesc={insightCohortDesc}
           compData={compData}
           emptyPrompt={emptyPrompt}
           fmt={fmt}
@@ -515,6 +612,7 @@ export default function EarningsDashboard() {
           periodLabel={periodLabel}
           periodUnit={periodUnit}
           pctResult={pctResult}
+          percentileContext={percentileContext}
           salary={salary}
           selectedBucket={selectedBucket}
           selectedLabel={selectedLabel}
@@ -527,8 +625,10 @@ export default function EarningsDashboard() {
         }}>
           Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional.
           Employees on adult rates in same job for &gt;1 year.
-          {isOccupationView && " Occupation view uses SOC20 major groups."}
+          {isOccupationView && ` Occupation view uses SOC20 major groups${usesOccupationAgeBand ? " with Table 20 age-band refinement" : ""}.`}
           {isIndustryView && " Industry view uses SIC2007 section groupings."}
+          {isRegionView && " Region view uses workplace regions."}
+          {isSectorView && " Sector view uses public, private, and non-profit groupings."}
           {isDesktop && " Hover columns for detail."}
         </p>
       </div>
