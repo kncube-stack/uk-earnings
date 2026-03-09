@@ -8,6 +8,8 @@ import Pill from "./components/Pill";
 import { INDUSTRY_DATA, INDUSTRY_OPTIONS } from "./data/asheIndustry";
 import { AGE_OCCUPATION_DATA, OCCUPATION_AGE_BANDS } from "./data/asheOccupationByAge";
 import { OCCUPATION_DATA, OCCUPATION_OPTIONS } from "./data/asheOccupation";
+import { OCCUPATION_REGION_DATA } from "./data/asheOccupationByRegion";
+import { OCCUPATION_REGION_GAP_DATA } from "./data/asheOccupationByRegionGap";
 import {
   AGE_GAP_DATA,
   AGE_OCCUPATION_GAP_DATA,
@@ -276,6 +278,7 @@ export default function EarningsDashboard() {
   const [work, setWork] = useState("all");
   const [userAge, setUserAge] = useState("");
   const [selectedOccupation, setSelectedOccupation] = useState("");
+  const [selectedOccupationRegion, setSelectedOccupationRegion] = useState("");
   const [selectedOccupationAgeBand, setSelectedOccupationAgeBand] = useState("");
   const [selectedOccupationDetail, setSelectedOccupationDetail] = useState("");
   const [occupationDetailData, setOccupationDetailData] = useState(null);
@@ -316,6 +319,7 @@ export default function EarningsDashboard() {
   }, [effectiveGender, work]);
   const gapDataKey = work === "ft" ? "ft" : "all";
 
+  const usesOccupationRegion = isOccupationView && selectedOccupationRegion;
   const usesOccupationAgeBand = isOccupationView && selectedOccupationAgeBand;
 
   useEffect(() => {
@@ -324,6 +328,7 @@ export default function EarningsDashboard() {
     if (
       isGapMode ||
       !isOccupationView ||
+      usesOccupationRegion ||
       usesOccupationAgeBand ||
       occupationDetailData ||
       occupationDetailStatus === "loading"
@@ -351,17 +356,18 @@ export default function EarningsDashboard() {
     isGapMode,
     isOccupationView,
     occupationDetailData,
+    usesOccupationRegion,
     usesOccupationAgeBand,
   ]);
 
   const occupationDetailSeries = useMemo(() => {
-    if (isGapMode || !(isOccupationView && selectedOccupation) || usesOccupationAgeBand || !occupationDetailData) return [];
+    if (isGapMode || !(isOccupationView && selectedOccupation) || usesOccupationAgeBand || usesOccupationRegion || !occupationDetailData) return [];
 
     const periodData = occupationDetailData[effectivePeriod];
     if (!periodData) return [];
     const detailByCohort = periodData[earningsDataKey] || periodData.all;
     return detailByCohort?.[selectedOccupation] || [];
-  }, [earningsDataKey, effectivePeriod, isGapMode, isOccupationView, occupationDetailData, selectedOccupation, usesOccupationAgeBand]);
+  }, [earningsDataKey, effectivePeriod, isGapMode, isOccupationView, occupationDetailData, selectedOccupation, usesOccupationAgeBand, usesOccupationRegion]);
 
   const occupationDetailOptions = useMemo(
     () => occupationDetailSeries.map(({ id, label }) => ({ id, label, shortLabel: id })),
@@ -382,6 +388,7 @@ export default function EarningsDashboard() {
     if (
       !isGapMode ||
       !isOccupationView ||
+      usesOccupationRegion ||
       usesOccupationAgeBand ||
       gapOccupationDetailData ||
       gapOccupationDetailStatus === "loading"
@@ -409,13 +416,14 @@ export default function EarningsDashboard() {
     gapOccupationDetailData,
     isGapMode,
     isOccupationView,
+    usesOccupationRegion,
     usesOccupationAgeBand,
   ]);
 
   const gapOccupationDetailSeries = useMemo(() => {
-    if (!isGapMode || !(isOccupationView && selectedOccupation) || usesOccupationAgeBand || !gapOccupationDetailData) return [];
+    if (!isGapMode || !(isOccupationView && selectedOccupation) || usesOccupationAgeBand || usesOccupationRegion || !gapOccupationDetailData) return [];
     return gapOccupationDetailData[gapDataKey]?.[selectedOccupation] || [];
-  }, [gapDataKey, gapOccupationDetailData, isGapMode, isOccupationView, selectedOccupation, usesOccupationAgeBand]);
+  }, [gapDataKey, gapOccupationDetailData, isGapMode, isOccupationView, selectedOccupation, usesOccupationAgeBand, usesOccupationRegion]);
 
   const gapOccupationDetailOptions = useMemo(
     () => gapOccupationDetailSeries.map(({ id, label }) => ({ id, label, shortLabel: id })),
@@ -431,7 +439,7 @@ export default function EarningsDashboard() {
     gapOccupationDetailSeries.length > 0;
 
   useEffect(() => {
-    if (!isOccupationView || usesOccupationAgeBand || !selectedOccupation) {
+    if (!isOccupationView || usesOccupationAgeBand || usesOccupationRegion || !selectedOccupation) {
       setSelectedOccupationDetail("");
       return;
     }
@@ -448,6 +456,7 @@ export default function EarningsDashboard() {
     selectedOccupation,
     selectedOccupationDetail,
     usesOccupationAgeBand,
+    usesOccupationRegion,
   ]);
 
   const viewConfig = isOccupationView
@@ -462,6 +471,8 @@ export default function EarningsDashboard() {
             ? "Loading detailed four-digit SOC job codes from ONS Table 14."
             : selectedOccupationDetail
               ? "Showing official four-digit SOC detail from ONS ASHE Table 14."
+              : selectedOccupationRegion
+                ? "Region refine uses official ONS ASHE Table 3 and stays at the major occupation-group level."
               : selectedOccupationAgeBand
                 ? "Age bands come from ONS ASHE Table 20 and stay at the major occupation-group level."
                 : "Occupation groups use official ONS ASHE Table 2 and can drill into Table 14 job detail."
@@ -469,6 +480,8 @@ export default function EarningsDashboard() {
             ? "Loading detailed four-digit SOC job codes from ONS Table 14."
             : selectedOccupationDetail
               ? "Showing official four-digit SOC detail from ONS ASHE Table 14."
+              : selectedOccupationRegion
+                ? "Region refine uses official ONS ASHE Table 3 and stays at the major occupation-group level."
               : selectedOccupationAgeBand
                 ? "Age bands come from ONS ASHE Table 20 and stay at the major occupation-group level."
                 : "Occupation groups use official ONS ASHE Table 2 and can drill into Table 14 job detail.",
@@ -511,6 +524,8 @@ export default function EarningsDashboard() {
   const sourceData = !isGapMode
     ? usesOccupationAgeBand
       ? AGE_OCCUPATION_DATA
+      : usesOccupationRegion
+        ? OCCUPATION_REGION_DATA
       : isOccupationView
         ? OCCUPATION_DATA
         : isIndustryView
@@ -525,6 +540,8 @@ export default function EarningsDashboard() {
   const gapData = isGapMode
     ? usesOccupationAgeBand
       ? AGE_OCCUPATION_GAP_DATA[gapDataKey]?.[selectedOccupationAgeBand] || []
+      : usesOccupationRegion
+        ? OCCUPATION_REGION_GAP_DATA[gapDataKey]?.[selectedOccupationRegion] || []
       : usesGapOccupationDetail
         ? gapOccupationDetailSeries
         : isOccupationView
@@ -542,6 +559,10 @@ export default function EarningsDashboard() {
     ? gapData
     : usesOccupationAgeBand
       ? sourceData[effectivePeriod][earningsDataKey]?.[selectedOccupationAgeBand] || []
+      : usesOccupationRegion
+        ? sourceData[effectivePeriod][earningsDataKey]?.[selectedOccupationRegion] ||
+          sourceData[effectivePeriod].all?.[selectedOccupationRegion] ||
+          []
       : usesOccupationDetail
         ? occupationDetailSeries
         : sourceData[effectivePeriod][earningsDataKey] || sourceData[effectivePeriod].all;
@@ -569,6 +590,8 @@ export default function EarningsDashboard() {
           : ageGroupLabel;
   const selectedBucket = data.find((row) => (row.id ?? row.label) === selectedBucketId);
   const selectedLabel = selectedBucket?.label ?? null;
+  const selectedOccupationRegionLabel =
+    REGION_OPTIONS.find((option) => option.id === selectedOccupationRegion)?.label ?? null;
   const pctResult = !isGapMode && selectedBucket && salary ? estimatePercentile(selectedBucket, salary) : null;
   const ageGroupIdx = data.findIndex((row) => row.label === ageGroupLabel);
   const compData = !isGapMode && isAgeView && COMP[earningsDataKey] && ageGroupIdx >= 0 ? COMP[earningsDataKey][ageGroupIdx] : null;
@@ -600,6 +623,9 @@ export default function EarningsDashboard() {
   const cohortDesc = `${genderLabel}${workLabel}`;
   const gapWorkLabel = work === "ft" ? "full-time employees" : "all employees";
   const occupationAgeBandLabel = selectedOccupationAgeBand || null;
+  const selectionContext = usesOccupationRegion && selectedOccupationRegionLabel
+    ? `in ${selectedOccupationRegionLabel}`
+    : null;
   const periodLabel = isGapMode ? "hourly pay excluding overtime" : isHours ? "weekly hours" : isHourly ? "hourly" : isWeekly ? "weekly" : "annual";
   const periodUnit = isHours ? "/wk" : isHourly ? "/hr" : isWeekly ? "/week" : "/year";
   const payPromptLabel = isGapMode ? "official gender pay gap" : isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary";
@@ -616,10 +642,12 @@ export default function EarningsDashboard() {
       ? "in this industry."
       : isRegionView
         ? "in this region."
-        : isSectorView
-          ? "in this sector."
-          : usesOccupationDetail
-            ? "in this job detail."
+      : isSectorView
+        ? "in this sector."
+        : usesOccupationDetail
+          ? "in this job detail."
+          : usesOccupationRegion
+            ? "in this region and occupation group."
             : usesOccupationAgeBand
               ? "in this age band and occupation group."
               : "in this occupation group.";
@@ -632,6 +660,8 @@ export default function EarningsDashboard() {
     ? data.length > 0
     : usesOccupationAgeBand
       ? !!sourceData[effectivePeriod][earningsDataKey]?.[selectedOccupationAgeBand]
+      : usesOccupationRegion
+        ? !!(sourceData[effectivePeriod][earningsDataKey]?.[selectedOccupationRegion] || sourceData[effectivePeriod].all?.[selectedOccupationRegion])
       : !!sourceData[effectivePeriod][earningsDataKey];
 
   return (
@@ -777,11 +807,56 @@ export default function EarningsDashboard() {
           )}
 
           {isOccupationView && (
+            <div style={{ width: isMobile ? "calc(58% - 5px)" : 170, flexShrink: 0 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Region</label>
+              <select
+                value={selectedOccupationRegion}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setSelectedOccupationRegion(nextValue);
+                  if (nextValue) {
+                    setSelectedOccupationAgeBand("");
+                    setSelectedOccupationDetail("");
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 6,
+                  border: `1px solid ${C.faint}`,
+                  background: C.card,
+                  color: selectedOccupationRegion ? C.text : C.muted,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  appearance: "none",
+                }}
+              >
+                <option value="">All regions</option>
+                {REGION_OPTIONS.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isOccupationView && (
             <div style={{ width: isMobile ? "calc(42% - 5px)" : 126, flexShrink: 0 }}>
               <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Age band</label>
               <select
                 value={selectedOccupationAgeBand}
-                onChange={(e) => setSelectedOccupationAgeBand(e.target.value)}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setSelectedOccupationAgeBand(nextValue);
+                  if (nextValue) {
+                    setSelectedOccupationRegion("");
+                    setSelectedOccupationDetail("");
+                  }
+                }}
+                disabled={Boolean(selectedOccupationRegion)}
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -792,11 +867,12 @@ export default function EarningsDashboard() {
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
+                  opacity: selectedOccupationRegion ? 0.65 : 1,
                   boxSizing: "border-box",
                   appearance: "none",
                 }}
               >
-                <option value="">All ages</option>
+                <option value="">{selectedOccupationRegion ? "Unavailable with region" : "All ages"}</option>
                 {OCCUPATION_AGE_BANDS.map((ageBand) => (
                   <option key={ageBand} value={ageBand}>
                     {ageBand}
@@ -812,7 +888,7 @@ export default function EarningsDashboard() {
               <select
                 value={selectedOccupationDetail}
                 onChange={(e) => setSelectedOccupationDetail(e.target.value)}
-                disabled={selectedOccupationAgeBand || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error"}
+                disabled={selectedOccupationAgeBand || selectedOccupationRegion || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error"}
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -823,13 +899,15 @@ export default function EarningsDashboard() {
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
-                  opacity: selectedOccupationAgeBand || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error" ? 0.65 : 1,
+                  opacity: selectedOccupationAgeBand || selectedOccupationRegion || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error" ? 0.65 : 1,
                   boxSizing: "border-box",
                   appearance: "none",
                 }}
               >
                 <option value="">
-                  {selectedOccupationAgeBand
+                  {selectedOccupationRegion
+                    ? "Unavailable with region"
+                    : selectedOccupationAgeBand
                     ? "Unavailable with age band"
                     : currentOccupationDetailStatus === "loading"
                     ? "Loading job details..."
@@ -908,6 +986,7 @@ export default function EarningsDashboard() {
               emptyPrompt={emptyPrompt}
               isMobile={isMobile}
               selectedBucket={selectedBucket}
+              selectionContext={selectionContext}
               selectedLabel={selectedLabel}
               workLabel={gapWorkLabel}
             />
@@ -951,6 +1030,7 @@ export default function EarningsDashboard() {
               percentileContext={percentileContext}
               salary={salary}
               selectedBucket={selectedBucket}
+              selectionContext={selectionContext}
               selectedLabel={selectedLabel}
               selectionType={view}
             />
@@ -961,7 +1041,7 @@ export default function EarningsDashboard() {
           Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional. Employees on adult rates in same job for &gt;1 year.
           {isGapMode
             ? ` Gender pay gap mode uses the official ONS formula based on hourly pay excluding overtime.${work === "ft" ? " The current UK full-time benchmark is 6.9%." : " The current UK all-employee benchmark is 12.8%."}`
-            : `${isOccupationView ? ` Occupation view uses SOC20 major groups${usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.` : ""}${isIndustryView ? " Industry view uses SIC2007 section groupings." : ""}${isRegionView ? " Region view uses workplace regions." : ""}${isSectorView ? " Sector view uses public, private, and non-profit groupings." : ""}`}
+            : `${isOccupationView ? ` Occupation view uses SOC20 major groups${usesOccupationRegion ? " with Table 3 region refinement" : usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.` : ""}${isIndustryView ? " Industry view uses SIC2007 section groupings." : ""}${isRegionView ? " Region view uses workplace regions." : ""}${isSectorView ? " Sector view uses public, private, and non-profit groupings." : ""}`}
           {!isGapMode && usesOccupationDetail && " The x-axis uses 4-digit SOC codes to keep detailed charts readable."}
           {isDesktop && ` Hover ${isGapMode ? "categories" : "columns"} for detail.`}
         </p>

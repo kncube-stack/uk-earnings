@@ -82,6 +82,22 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Added a production-only fresh-open path so the app forces a cache-busting reload when opened, which is especially useful for mobile web-app style launches.
 - Added Vercel cache headers to keep the HTML document itself out of stale caches while leaving hashed assets to version normally.
 
+### Phase 12
+
+- Added an official `Region` refine inside `Occupation` using ONS ASHE Table 3 so occupation-group comparisons can now be scoped to workplace region without leaving the occupation workflow.
+- Kept the UI shape stable by treating region as a refine inside `Occupation` rather than introducing a separate cross-tab or second chart mode.
+- Preserved source fidelity by constraining unpublished combinations:
+  - occupation + region works at the major occupation-group level
+  - age-band refine remains Table 20 only
+  - four-digit job detail remains Table 14 only
+- Added the same occupation-region refine to official gender pay gap mode using Table 3 hourly pay excluding overtime.
+- Strengthened the take-home estimator with explicit assumptions for:
+  - tax residence (`England/Wales/NI` or `Scotland`)
+  - employee pension contribution percentage
+  - student loan plan (`Plan 1`, `Plan 2`, `Plan 4`)
+  - postgraduate loan on/off
+- Replaced the old hard-coded no-pension/no-student-loan estimator with a more explicit 2025/26 payroll-style model while still keeping the UI compact.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.
@@ -90,8 +106,10 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Region view: ONS ASHE Table 15.
 - Sector view: ONS ASHE Table 13.
 - Occupation age-band refine: ONS ASHE Table 20.
+- Occupation region refine: ONS ASHE Table 3.
 - Occupation four-digit drill-down: ONS ASHE Table 14.
 - Official gender pay gap mode: ONS ASHE Tables 6, 2, 4, 13, 15, 20, and 14 using hourly pay excluding overtime only.
+- Occupation region gender pay gap refine: ONS ASHE Table 3 using hourly pay excluding overtime.
 
 ## Generator Scripts
 
@@ -100,19 +118,23 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - `scripts/generate_region_data.py`
 - `scripts/generate_sector_data.py`
 - `scripts/generate_age_occupation_data.py`
+- `scripts/generate_region_occupation_data.py`
 - `scripts/generate_occupation_detail_data.py`
 - `scripts/generate_gender_gap_data.py`
+- `scripts/generate_region_occupation_gap_data.py`
 - `scripts/generate_gender_gap_detail_data.py`
 
 ## Current Verification
 
 - Build the app with `npm run build`.
 - Confirm the new views render from official generated modules in `src/data/`.
+- Confirm occupation-region refine uses official generated Table 3 modules in both earnings and gap mode.
 - Confirm gender pay gap mode uses only hourly pay excluding overtime and shows the official UK benchmark for the current work pattern.
+- Confirm take-home settings alter the breakdown without breaking the percentile / comparison flow.
 - Keep `.DS_Store` out of commits.
 
 ## Next Good Candidates
 
-- Region + occupation cross-filtering.
 - Region + industry cross-filtering.
+- Custom tax codes and pension treatment variants if the take-home estimator needs to go beyond standard-code payroll assumptions.
 - Additional cross-breakdowns only where they can be added without cluttering the current interaction model.

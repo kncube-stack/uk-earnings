@@ -12,6 +12,7 @@ export default function GenderGapCard({
   emptyPrompt,
   isMobile,
   selectedBucket,
+  selectionContext,
   selectedLabel,
   workLabel,
 }) {
@@ -67,7 +68,7 @@ export default function GenderGapCard({
       </div>
 
       <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: "#c5c0b6" }}>
-        In <strong style={{ color: C.text }}>{selectedLabel}</strong>, the published ONS median hourly pay excluding overtime for
+        In <strong style={{ color: C.text }}>{selectedLabel}</strong>{selectionContext ? ` ${selectionContext}` : ""}, the published ONS median hourly pay excluding overtime for
         {" "}
         <strong style={{ color: C.blue }}>men</strong> is <strong style={{ color: C.text }}>£{maleMedian?.toFixed(2) ?? "—"}</strong>
         {" "}
