@@ -26,7 +26,7 @@ export default function EarningsChart({
   const left = isMobile ? 44 : 64;
   const rightPad = isMobile ? 12 : 30;
   const usableWidth = Math.max(200, containerWidth - 8 - left - rightPad);
-  const { compactMobile, curatedDenseView, denseAxis, detailAxis } = getAxisDensity({ data, isMobile, selectionType });
+  const { compactMobile, denseAxis, detailAxis } = getAxisDensity({ data, isMobile, selectionType });
   const minBarWidth = detailAxis ? (isMobile ? 52 : 58) : denseAxis ? (isMobile ? 58 : 62) : 28;
   const maxBarWidth = detailAxis ? (isMobile ? 64 : 90) : denseAxis ? (isMobile ? 72 : 94) : 74;
   const barWidth = Math.max(minBarWidth, Math.min(maxBarWidth, Math.floor(usableWidth / data.length) - (isMobile ? 6 : 16)));
@@ -91,28 +91,6 @@ export default function EarningsChart({
 
   return (
     <>
-      {(curatedDenseView || compactMobile) && (
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 8,
-            padding: "5px 9px",
-            borderRadius: 999,
-            border: `1px solid ${C.border}`,
-            background: C.card,
-            color: C.muted,
-            fontSize: isMobile ? 10 : 11,
-          }}
-        >
-          {compactMobile ? "Compact chart mode" : "Curated labels"}
-          <span style={{ color: C.dim }}>
-            {detailAxis ? "Codes stay short on the axis." : "Labels are shortened for readability."}
-          </span>
-        </div>
-      )}
-
       {selectedRow && (
         <div
           style={{

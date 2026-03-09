@@ -19,7 +19,7 @@ export default function GenderGapChart({
   const left = isMobile ? 46 : 68;
   const rightPad = isMobile ? 14 : 32;
   const usableWidth = Math.max(220, containerWidth - 8 - left - rightPad);
-  const { compactMobile, curatedDenseView, denseAxis, detailAxis } = getAxisDensity({ data, isMobile, selectionType });
+  const { compactMobile, denseAxis, detailAxis } = getAxisDensity({ data, isMobile, selectionType });
   const minBarWidth = detailAxis ? (isMobile ? 48 : 56) : denseAxis ? (isMobile ? 54 : 60) : 42;
   const maxBarWidth = detailAxis ? (isMobile ? 68 : 84) : denseAxis ? (isMobile ? 76 : 96) : 84;
   const barWidth = Math.max(minBarWidth, Math.min(maxBarWidth, Math.floor(usableWidth / Math.max(1, data.length)) - (isMobile ? 6 : 12)));
@@ -62,28 +62,6 @@ export default function GenderGapChart({
 
   return (
     <>
-      {(curatedDenseView || compactMobile) && (
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 8,
-            padding: "5px 9px",
-            borderRadius: 999,
-            border: `1px solid ${C.border}`,
-            background: C.card,
-            color: C.muted,
-            fontSize: isMobile ? 10 : 11,
-          }}
-        >
-          {compactMobile ? "Compact chart mode" : "Curated labels"}
-          <span style={{ color: C.dim }}>
-            {detailAxis ? "The axis stays in code form; full titles are in the selector." : "Labels are shortened for readability."}
-          </span>
-        </div>
-      )}
-
       {selectedRow && (
         <div
           style={{
