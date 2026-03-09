@@ -88,6 +88,7 @@ export default function EarningsChart({
   const dotRadius = isMobile ? 3 : 4;
   const medianRadius = isMobile ? 4.5 : 6;
   const showDefaultMedianLabels = !(compactMobile && denseAxis);
+  const selectedMedianLabel = selectedRow?.median != null ? `Median ${fmt(selectedRow.median)}` : null;
 
   return (
     <>
@@ -97,6 +98,7 @@ export default function EarningsChart({
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
+            flexWrap: "wrap",
             marginBottom: 8,
             padding: isMobile ? "6px 10px" : "7px 12px",
             borderRadius: 999,
@@ -111,6 +113,11 @@ export default function EarningsChart({
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {getSelectedDisplayLabel(selectedRow, selectionType)}
           </span>
+          {isMobile && selectedMedianLabel && (
+            <span style={{ color: C.text, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {selectedMedianLabel}
+            </span>
+          )}
         </div>
       )}
 

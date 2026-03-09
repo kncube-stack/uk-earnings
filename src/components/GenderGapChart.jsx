@@ -60,6 +60,10 @@ export default function GenderGapChart({
     gridLines.push(Number(value.toFixed(2)));
   }
 
+  const selectedMedianLabel = selectedRow
+    ? `Men ${fmtRate(selectedRow.maleMedian)} · Women ${fmtRate(selectedRow.femaleMedian)}`
+    : null;
+
   return (
     <>
       {selectedRow && (
@@ -68,6 +72,7 @@ export default function GenderGapChart({
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
+            flexWrap: "wrap",
             marginBottom: 8,
             padding: isMobile ? "6px 10px" : "7px 12px",
             borderRadius: 999,
@@ -82,6 +87,11 @@ export default function GenderGapChart({
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {getSelectedDisplayLabel(selectedRow, selectionType)}
           </span>
+          {isMobile && selectedMedianLabel && (
+            <span style={{ color: C.text, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {selectedMedianLabel}
+            </span>
+          )}
         </div>
       )}
 

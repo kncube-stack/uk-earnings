@@ -72,6 +72,11 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Kept full official ONS job titles in the selector and selected badge so the UI balances readability with source fidelity.
 - Applied the same detailed-job labeling strategy in both earnings and gender pay gap chart modes.
 
+### Phase 10
+
+- Updated the selected badge in mobile chart states so the chosen band or category always shows its median value even before the user enters their own pay.
+- Kept the change in the selected state rather than adding more persistent chart clutter.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.
