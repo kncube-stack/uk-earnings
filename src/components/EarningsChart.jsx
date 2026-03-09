@@ -10,22 +10,27 @@ function wrapAxisLabel(label, maxCharsPerLine, maxLines = 2) {
     .split(/\s+/);
   const lines = [];
   let current = "";
+  let index = 0;
 
-  for (const word of words) {
+  while (index < words.length) {
+    const word = words[index];
     const next = current ? `${current} ${word}` : word;
     if (next.length <= maxCharsPerLine || !current) {
       current = next;
+      index += 1;
       continue;
     }
 
     lines.push(current);
     current = word;
-    if (lines.length === maxLines - 1) break;
+    index += 1;
+    if (lines.length === maxLines - 1) {
+      current = [current, ...words.slice(index)].join(" ").trim();
+      break;
+    }
   }
 
-  const remainingWords = words.slice(lines.join(" ").split(/\s+/).filter(Boolean).length);
-  const tail = [current, ...remainingWords].filter(Boolean).join(" ").trim();
-  if (tail) lines.push(tail);
+  if (current) lines.push(current);
 
   const trimmed = lines.slice(0, maxLines);
   if (lines.length > maxLines) {
@@ -59,7 +64,7 @@ export default function EarningsChart({
   const usableWidth = Math.max(200, containerWidth - 8 - left - rightPad);
   const longestAxisLabel = Math.max(...data.map((row) => String(row.shortLabel ?? row.label ?? "").length), 0);
   const denseAxis = data.length >= 10 || longestAxisLabel >= 12;
-  const minBarWidth = denseAxis ? (isMobile ? 42 : 50) : 28;
+  const minBarWidth = denseAxis ? (isMobile ? 50 : 58) : 28;
   const maxBarWidth = denseAxis ? (isMobile ? 64 : 90) : 74;
   const barWidth = Math.max(minBarWidth, Math.min(maxBarWidth, Math.floor(usableWidth / data.length) - (isMobile ? 6 : 16)));
   const minGap = denseAxis ? (isMobile ? 8 : 10) : 4;
@@ -67,7 +72,7 @@ export default function EarningsChart({
   const actualWidth = left + data.length * barWidth + (data.length - 1) * gap + rightPad;
   const height = isMobile ? 320 : isTablet ? 370 : 420;
   const top = 46;
-  const labelMaxChars = denseAxis ? (isMobile ? 8 : 11) : 12;
+  const labelMaxChars = denseAxis ? (isMobile ? 9 : 12) : 12;
   const labelLineHeight = isMobile ? 10 : 12;
   const labelLineCount = denseAxis ? 2 : 1;
   const bottomPad = isMobile ? 74 : denseAxis ? 82 : 60;
