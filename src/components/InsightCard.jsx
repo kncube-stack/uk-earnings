@@ -49,7 +49,11 @@ export default function InsightCard({
   const annualGross = isHourly ? salary * (parseFloat(hoursPay) || 37.5) * 52 : isWeekly ? salary * 52 : salary;
   const taxProfile = !isHours && salary ? calcNetPay(annualGross) : null;
   const isAgeView = selectionType === "age";
-  const percentileContext = isAgeView ? "in your age bracket." : "in this occupation group.";
+  const percentileContext = isAgeView
+    ? "in your age bracket."
+    : selectionType === "industry"
+      ? "in this industry."
+      : "in this occupation group.";
 
   return (
     <div
