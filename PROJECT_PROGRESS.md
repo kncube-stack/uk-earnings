@@ -38,6 +38,22 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Added horizontal chart scrolling only where needed so dense detailed occupation sets remain usable on mobile.
 - Kept age-band refine and 4-digit drill-down separate because this source set does not publish that combination here.
 
+### Phase 6
+
+- Added an `Analysis` mode switch so the app can stay in its existing earnings workflow or move into a dedicated official `Gender pay gap` mode.
+- Kept the UI shape stable by reusing the current view system for `Age`, `Occupation`, `Industry`, `Region`, and `Sector`.
+- Restricted gender pay gap mode to official ONS hourly pay excluding overtime only, rather than reusing annual or weekly earnings values.
+- Added dedicated gender pay gap datasets, charting, and summary card for:
+  - age from ONS ASHE Table 6
+  - occupation from Table 2
+  - industry from Table 4
+  - sector from Table 13
+  - region from Table 15
+  - occupation age-band refine from Table 20
+  - four-digit occupation drill-down from Table 14
+- Used the official ONS formula: `(men's median hourly pay excluding overtime - women's median hourly pay excluding overtime) / men's median hourly pay excluding overtime`.
+- Preserved mobile usability by keeping the filter stack compact and using a dedicated dumbbell-style comparison chart rather than overloading the existing percentile chart.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.
@@ -47,6 +63,7 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Sector view: ONS ASHE Table 13.
 - Occupation age-band refine: ONS ASHE Table 20.
 - Occupation four-digit drill-down: ONS ASHE Table 14.
+- Official gender pay gap mode: ONS ASHE Tables 6, 2, 4, 13, 15, 20, and 14 using hourly pay excluding overtime only.
 
 ## Generator Scripts
 
@@ -56,11 +73,14 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - `scripts/generate_sector_data.py`
 - `scripts/generate_age_occupation_data.py`
 - `scripts/generate_occupation_detail_data.py`
+- `scripts/generate_gender_gap_data.py`
+- `scripts/generate_gender_gap_detail_data.py`
 
 ## Current Verification
 
 - Build the app with `npm run build`.
 - Confirm the new views render from official generated modules in `src/data/`.
+- Confirm gender pay gap mode uses only hourly pay excluding overtime and shows the official UK benchmark for the current work pattern.
 - Keep `.DS_Store` out of commits.
 
 ## Next Good Candidates

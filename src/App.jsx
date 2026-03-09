@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import EarningsChart from "./components/EarningsChart";
+import GenderGapCard from "./components/GenderGapCard";
+import GenderGapChart from "./components/GenderGapChart";
 import InsightCard from "./components/InsightCard";
 import Pill from "./components/Pill";
 import { INDUSTRY_DATA, INDUSTRY_OPTIONS } from "./data/asheIndustry";
 import { AGE_OCCUPATION_DATA, OCCUPATION_AGE_BANDS } from "./data/asheOccupationByAge";
 import { OCCUPATION_DATA, OCCUPATION_OPTIONS } from "./data/asheOccupation";
+import {
+  AGE_GAP_DATA,
+  AGE_OCCUPATION_GAP_DATA,
+  GAP_BENCHMARKS,
+  INDUSTRY_GAP_DATA,
+  OCCUPATION_GAP_DATA,
+  REGION_GAP_DATA,
+  SECTOR_GAP_DATA,
+} from "./data/asheGenderGap";
 import { REGION_DATA, REGION_OPTIONS } from "./data/asheRegion";
 import { SECTOR_DATA, SECTOR_OPTIONS } from "./data/asheSector";
 import { useContainerWidth } from "./hooks/useContainerWidth";
@@ -258,6 +269,7 @@ const COMP = {
 };
 
 export default function EarningsDashboard() {
+  const [analysisMode, setAnalysisMode] = useState("earnings");
   const [view, setView] = useState("age");
   const [period, setPeriod] = useState("annual");
   const [gender, setGender] = useState("all");
@@ -268,6 +280,8 @@ export default function EarningsDashboard() {
   const [selectedOccupationDetail, setSelectedOccupationDetail] = useState("");
   const [occupationDetailData, setOccupationDetailData] = useState(null);
   const [occupationDetailStatus, setOccupationDetailStatus] = useState("idle");
+  const [gapOccupationDetailData, setGapOccupationDetailData] = useState(null);
+  const [gapOccupationDetailStatus, setGapOccupationDetailStatus] = useState("idle");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSector, setSelectedSector] = useState("");
@@ -282,73 +296,38 @@ export default function EarningsDashboard() {
   const isMobile = cw < 520;
   const isTablet = cw >= 520 && cw < 768;
   const isDesktop = cw >= 768;
+  const isGapMode = analysisMode === "gap";
   const isAgeView = view === "age";
   const isOccupationView = view === "occupation";
   const isIndustryView = view === "industry";
   const isRegionView = view === "region";
   const isSectorView = view === "sector";
+  const effectivePeriod = isGapMode ? "hourly" : period;
+  const effectiveGender = isGapMode ? "all" : gender;
 
-  // Derive the data key
-  const dataKey = useMemo(() => {
-    if (gender === "all" && work === "all") return "all";
-    if (gender === "all" && work === "ft") return "ft";
-    if (gender === "male" && work === "all") return "male";
-    if (gender === "female" && work === "all") return "female";
-    if (gender === "male" && work === "ft") return "male_ft";
-    if (gender === "female" && work === "ft") return "female_ft";
-    // Fallback for combos we don't have
+  const earningsDataKey = useMemo(() => {
+    if (effectiveGender === "all" && work === "all") return "all";
+    if (effectiveGender === "all" && work === "ft") return "ft";
+    if (effectiveGender === "male" && work === "all") return "male";
+    if (effectiveGender === "female" && work === "all") return "female";
+    if (effectiveGender === "male" && work === "ft") return "male_ft";
+    if (effectiveGender === "female" && work === "ft") return "female_ft";
     return "all";
-  }, [gender, work]);
-
-  const viewConfig = isOccupationView
-    ? {
-        selectorLabel: "Occupation group",
-        selectorKind: "occupation group",
-        selectorOptions: OCCUPATION_OPTIONS,
-        selectorValue: selectedOccupation,
-        setSelectorValue: setSelectedOccupation,
-        selectorNote: occupationDetailStatus === "loading"
-          ? "Loading official ONS Table 14 job detail."
-          : selectedOccupationDetail
-          ? "Detailed occupation view uses official ONS 4-digit SOC job data from ASHE Table 14."
-          : selectedOccupationAgeBand
-            ? "Occupation view uses official ONS SOC20 major occupation groups with age-band refinement from ASHE Table 20. Four-digit job detail is only published here for all ages."
-            : "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2, with optional 4-digit drill-down from Table 14.",
-      }
-    : isIndustryView
-      ? {
-          selectorLabel: "Industry section",
-          selectorKind: "industry section",
-          selectorOptions: INDUSTRY_OPTIONS,
-          selectorValue: selectedIndustry,
-          setSelectorValue: setSelectedIndustry,
-          selectorNote: "Industry view uses official ONS SIC2007 section groupings from ASHE Table 4.",
-        }
-      : isRegionView
-        ? {
-            selectorLabel: "Region",
-            selectorKind: "region",
-            selectorOptions: REGION_OPTIONS,
-            selectorValue: selectedRegion,
-            setSelectorValue: setSelectedRegion,
-            selectorNote: "Region view uses official ONS UK workplace regions from ASHE Table 15.",
-          }
-        : isSectorView
-          ? {
-              selectorLabel: "Sector",
-              selectorKind: "sector",
-              selectorOptions: SECTOR_OPTIONS,
-              selectorValue: selectedSector,
-              setSelectorValue: setSelectedSector,
-              selectorNote: "Sector view uses official ONS public, private, non-profit, and unclassified groups from ASHE Table 13.",
-            }
-          : null;
+  }, [effectiveGender, work]);
+  const gapDataKey = work === "ft" ? "ft" : "all";
 
   const usesOccupationAgeBand = isOccupationView && selectedOccupationAgeBand;
+
   useEffect(() => {
     let cancelled = false;
 
-    if (!(isOccupationView && selectedOccupation) || usesOccupationAgeBand || occupationDetailData || occupationDetailStatus === "loading") {
+    if (
+      isGapMode ||
+      !(isOccupationView && selectedOccupation) ||
+      usesOccupationAgeBand ||
+      occupationDetailData ||
+      occupationDetailStatus === "loading"
+    ) {
       return undefined;
     }
 
@@ -369,6 +348,7 @@ export default function EarningsDashboard() {
       cancelled = true;
     };
   }, [
+    isGapMode,
     isOccupationView,
     occupationDetailData,
     occupationDetailStatus,
@@ -377,25 +357,21 @@ export default function EarningsDashboard() {
   ]);
 
   const occupationDetailSeries = useMemo(() => {
-    if (!(isOccupationView && selectedOccupation) || usesOccupationAgeBand || !occupationDetailData) return [];
+    if (isGapMode || !(isOccupationView && selectedOccupation) || usesOccupationAgeBand || !occupationDetailData) return [];
 
-    const periodData = occupationDetailData[period];
+    const periodData = occupationDetailData[effectivePeriod];
     if (!periodData) return [];
-    const detailByCohort = periodData[dataKey] || periodData.all;
+    const detailByCohort = periodData[earningsDataKey] || periodData.all;
     return detailByCohort?.[selectedOccupation] || [];
-  }, [dataKey, isOccupationView, occupationDetailData, period, selectedOccupation, usesOccupationAgeBand]);
+  }, [earningsDataKey, effectivePeriod, isGapMode, isOccupationView, occupationDetailData, selectedOccupation, usesOccupationAgeBand]);
 
   const occupationDetailOptions = useMemo(
-    () =>
-      occupationDetailSeries.map(({ id, label }) => ({
-        id,
-        label,
-        shortLabel: id,
-      })),
+    () => occupationDetailSeries.map(({ id, label }) => ({ id, label, shortLabel: id })),
     [occupationDetailSeries],
   );
 
   const usesOccupationDetail =
+    !isGapMode &&
     isOccupationView &&
     !usesOccupationAgeBand &&
     !!selectedOccupation &&
@@ -403,15 +379,74 @@ export default function EarningsDashboard() {
     occupationDetailSeries.some(({ id }) => id === selectedOccupationDetail);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (
+      !isGapMode ||
+      !(isOccupationView && selectedOccupation) ||
+      usesOccupationAgeBand ||
+      gapOccupationDetailData ||
+      gapOccupationDetailStatus === "loading"
+    ) {
+      return undefined;
+    }
+
+    setGapOccupationDetailStatus("loading");
+
+    import("./data/asheGenderGapDetail")
+      .then((module) => {
+        if (cancelled) return;
+        setGapOccupationDetailData(module.OCCUPATION_DETAIL_GAP_DATA);
+        setGapOccupationDetailStatus("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setGapOccupationDetailStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    gapOccupationDetailData,
+    gapOccupationDetailStatus,
+    isGapMode,
+    isOccupationView,
+    selectedOccupation,
+    usesOccupationAgeBand,
+  ]);
+
+  const gapOccupationDetailSeries = useMemo(() => {
+    if (!isGapMode || !(isOccupationView && selectedOccupation) || usesOccupationAgeBand || !gapOccupationDetailData) return [];
+    return gapOccupationDetailData[gapDataKey]?.[selectedOccupation] || [];
+  }, [gapDataKey, gapOccupationDetailData, isGapMode, isOccupationView, selectedOccupation, usesOccupationAgeBand]);
+
+  const gapOccupationDetailOptions = useMemo(
+    () => gapOccupationDetailSeries.map(({ id, label }) => ({ id, label, shortLabel: id })),
+    [gapOccupationDetailSeries],
+  );
+
+  const usesGapOccupationDetail =
+    isGapMode &&
+    isOccupationView &&
+    !usesOccupationAgeBand &&
+    !!selectedOccupation &&
+    !!selectedOccupationDetail &&
+    gapOccupationDetailSeries.some(({ id }) => id === selectedOccupationDetail);
+
+  useEffect(() => {
     if (!isOccupationView || usesOccupationAgeBand || !selectedOccupation) {
       setSelectedOccupationDetail("");
       return;
     }
 
-    if (selectedOccupationDetail && !occupationDetailSeries.some(({ id }) => id === selectedOccupationDetail)) {
+    const currentSeries = isGapMode ? gapOccupationDetailSeries : occupationDetailSeries;
+    if (selectedOccupationDetail && !currentSeries.some(({ id }) => id === selectedOccupationDetail)) {
       setSelectedOccupationDetail("");
     }
   }, [
+    gapOccupationDetailSeries,
+    isGapMode,
     isOccupationView,
     occupationDetailSeries,
     selectedOccupation,
@@ -419,35 +454,114 @@ export default function EarningsDashboard() {
     usesOccupationAgeBand,
   ]);
 
-  const sourceData = usesOccupationAgeBand
-    ? AGE_OCCUPATION_DATA
-    : isOccupationView
-      ? OCCUPATION_DATA
-      : isIndustryView
-        ? INDUSTRY_DATA
-        : isRegionView
-          ? REGION_DATA
-          : isSectorView
-            ? SECTOR_DATA
-            : DATA;
-  const data = usesOccupationAgeBand
-    ? sourceData[period][dataKey]?.[selectedOccupationAgeBand] || []
-    : usesOccupationDetail
-      ? occupationDetailSeries
-    : sourceData[period][dataKey] || sourceData[period].all;
-  const isWeekly = period === "weekly";
+  const viewConfig = isOccupationView
+    ? {
+        selectorLabel: "Occupation group",
+        selectorKind: "occupation group",
+        selectorOptions: OCCUPATION_OPTIONS,
+        selectorValue: selectedOccupation,
+        setSelectorValue: setSelectedOccupation,
+        selectorNote: isGapMode
+          ? gapOccupationDetailStatus === "loading"
+            ? "Loading official ONS Table 14 gender pay gap detail."
+            : selectedOccupationDetail
+              ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 14."
+              : selectedOccupationAgeBand
+                ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 20."
+                : "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 2."
+          : occupationDetailStatus === "loading"
+            ? "Loading official ONS Table 14 job detail."
+            : selectedOccupationDetail
+              ? "Detailed occupation view uses official ONS 4-digit SOC job data from ASHE Table 14."
+              : selectedOccupationAgeBand
+                ? "Occupation view uses official ONS SOC20 major occupation groups with age-band refinement from ASHE Table 20. Four-digit job detail is only published here for all ages."
+                : "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2, with optional 4-digit drill-down from Table 14.",
+      }
+    : isIndustryView
+      ? {
+          selectorLabel: "Industry section",
+          selectorKind: "industry section",
+          selectorOptions: INDUSTRY_OPTIONS,
+          selectorValue: selectedIndustry,
+          setSelectorValue: setSelectedIndustry,
+          selectorNote: isGapMode
+            ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 4."
+            : "Industry view uses official ONS SIC2007 section groupings from ASHE Table 4.",
+        }
+      : isRegionView
+        ? {
+            selectorLabel: "Region",
+            selectorKind: "region",
+            selectorOptions: REGION_OPTIONS,
+            selectorValue: selectedRegion,
+            setSelectorValue: setSelectedRegion,
+            selectorNote: isGapMode
+              ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 15."
+              : "Region view uses official ONS UK workplace regions from ASHE Table 15.",
+          }
+        : isSectorView
+          ? {
+              selectorLabel: "Sector",
+              selectorKind: "sector",
+              selectorOptions: SECTOR_OPTIONS,
+              selectorValue: selectedSector,
+              setSelectorValue: setSelectedSector,
+              selectorNote: isGapMode
+                ? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 13."
+                : "Sector view uses official ONS public, private, non-profit, and unclassified groups from ASHE Table 13.",
+            }
+          : null;
 
-  const rawAge = parseInt(userAge);
+  const sourceData = !isGapMode
+    ? usesOccupationAgeBand
+      ? AGE_OCCUPATION_DATA
+      : isOccupationView
+        ? OCCUPATION_DATA
+        : isIndustryView
+          ? INDUSTRY_DATA
+          : isRegionView
+            ? REGION_DATA
+            : isSectorView
+              ? SECTOR_DATA
+              : DATA
+    : null;
+
+  const gapData = isGapMode
+    ? usesOccupationAgeBand
+      ? AGE_OCCUPATION_GAP_DATA[gapDataKey]?.[selectedOccupationAgeBand] || []
+      : usesGapOccupationDetail
+        ? gapOccupationDetailSeries
+        : isOccupationView
+          ? OCCUPATION_GAP_DATA[gapDataKey] || []
+          : isIndustryView
+            ? INDUSTRY_GAP_DATA[gapDataKey] || []
+            : isRegionView
+              ? REGION_GAP_DATA[gapDataKey] || []
+              : isSectorView
+                ? SECTOR_GAP_DATA[gapDataKey] || []
+                : AGE_GAP_DATA[gapDataKey] || []
+    : [];
+
+  const data = isGapMode
+    ? gapData
+    : usesOccupationAgeBand
+      ? sourceData[effectivePeriod][earningsDataKey]?.[selectedOccupationAgeBand] || []
+      : usesOccupationDetail
+        ? occupationDetailSeries
+        : sourceData[effectivePeriod][earningsDataKey] || sourceData[effectivePeriod].all;
+
+  const isWeekly = effectivePeriod === "weekly";
+  const isHourly = effectivePeriod === "hourly";
+  const isHours = effectivePeriod === "hours";
+
+  const rawAge = parseInt(userAge, 10);
   const age = !isNaN(rawAge) && rawAge >= 16 ? rawAge : null;
-  const isHourly = period === "hourly";
-  const isHours = period === "hours";
   const userSalary = isHours ? hoursPay : isHourly ? hourlyPay : isWeekly ? weeklyPay : annualPay;
   const setUserSalary = isHours ? setHoursPay : isHourly ? setHourlyPay : isWeekly ? setWeeklyPay : setAnnualPay;
   const salary = parseFloat(String(userSalary).replace(/[\u00a3,\s]/g, "")) || null;
   const ageGroupLabel = age ? findGroup(age) : null;
-  const ageGroup = data.find(d => d.label === ageGroupLabel);
   const selectedBucketId = isOccupationView
-    ? usesOccupationDetail
+    ? usesOccupationDetail || usesGapOccupationDetail
       ? selectedOccupationDetail || null
       : selectedOccupation || null
     : isIndustryView
@@ -459,22 +573,21 @@ export default function EarningsDashboard() {
           : ageGroupLabel;
   const selectedBucket = data.find((row) => (row.id ?? row.label) === selectedBucketId);
   const selectedLabel = selectedBucket?.label ?? null;
-  const pctResult = selectedBucket && salary ? estimatePercentile(selectedBucket, salary) : null;
-  const ageGroupIdx = data.findIndex(d => d.label === ageGroupLabel);
-  const compData = isAgeView && COMP[dataKey] && ageGroupIdx >= 0 ? COMP[dataKey][ageGroupIdx] : null;
-
-  const availableKeys = useMemo(() => PK.filter(k => data.some(d => d[k] != null)), [data]);
+  const pctResult = !isGapMode && selectedBucket && salary ? estimatePercentile(selectedBucket, salary) : null;
+  const ageGroupIdx = data.findIndex((row) => row.label === ageGroupLabel);
+  const compData = !isGapMode && isAgeView && COMP[earningsDataKey] && ageGroupIdx >= 0 ? COMP[earningsDataKey][ageGroupIdx] : null;
+  const availableKeys = useMemo(() => PK.filter((key) => data.some((row) => row[key] != null)), [data]);
 
   const handleColumnInteract = useCallback((i) => {
-    setActiveIdx(prev => prev === i ? null : i);
+    setActiveIdx((prev) => (prev === i ? null : i));
   }, []);
 
   const fmtGrid = (v) => {
     if (v === 0) return isHours ? "0h" : "£0";
     if (isHours) return `${v}h`;
     if (isHourly) return `£${v}`;
-    if (isWeekly) return isMobile && v >= 1000 ? `£${(v/1000).toFixed(1)}k` : `£${v}`;
-    return `£${(v/1000).toFixed(0)}k`;
+    if (isWeekly) return isMobile && v >= 1000 ? `£${(v / 1000).toFixed(1)}k` : `£${v}`;
+    return `£${(v / 1000).toFixed(0)}k`;
   };
 
   const fmt = (v) => {
@@ -484,17 +597,23 @@ export default function EarningsDashboard() {
     return `£${v.toLocaleString("en-GB")}`;
   };
 
-  // Description helpers
-  const genderLabel = { all: "all employees", male: "male employees", female: "female employees" }[gender] || "employees";
+  const fmtRate = (value) => (value == null ? "—" : `£${Number(value).toFixed(1)}`);
+
+  const genderLabel = { all: "all employees", male: "male employees", female: "female employees" }[effectiveGender] || "employees";
   const workLabel = { all: "", ft: " (full-time)", pt: " (part-time)" }[work] || "";
   const cohortDesc = `${genderLabel}${workLabel}`;
+  const gapWorkLabel = work === "ft" ? "full-time employees" : "all employees";
   const occupationAgeBandLabel = selectedOccupationAgeBand || null;
-  const periodLabel = isHours ? "weekly hours" : isHourly ? "hourly" : isWeekly ? "weekly" : "annual";
+  const periodLabel = isGapMode ? "hourly pay excluding overtime" : isHours ? "weekly hours" : isHourly ? "hourly" : isWeekly ? "weekly" : "annual";
   const periodUnit = isHours ? "/wk" : isHourly ? "/hr" : isWeekly ? "/week" : "/year";
-  const payPromptLabel = isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary";
-  const emptyPrompt = isAgeView
-    ? `Enter your age and ${payPromptLabel} above to see where you fall.`
-    : `Choose a ${viewConfig.selectorKind} and enter your ${payPromptLabel} above to see where you fall.`;
+  const payPromptLabel = isGapMode ? "official gender pay gap" : isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary";
+  const emptyPrompt = isGapMode
+    ? isAgeView
+      ? "Enter your age to highlight the official gender pay gap for your age group."
+      : `Choose a ${viewConfig.selectorKind} to explore the official gender pay gap.`
+    : isAgeView
+      ? `Enter your age and ${payPromptLabel} above to see where you fall.`
+      : `Choose a ${viewConfig.selectorKind} and enter your ${payPromptLabel} above to see where you fall.`;
   const percentileContext = isAgeView
     ? "in your age bracket."
     : isIndustryView
@@ -505,90 +624,131 @@ export default function EarningsDashboard() {
           ? "in this sector."
           : usesOccupationDetail
             ? "in this job detail."
-          : usesOccupationAgeBand
-            ? "in this age band and occupation group."
-            : "in this occupation group.";
+            : usesOccupationAgeBand
+              ? "in this age band and occupation group."
+              : "in this occupation group.";
   const insightCohortDesc = usesOccupationAgeBand ? `${cohortDesc} aged ${occupationAgeBandLabel}` : cohortDesc;
+  const gapBenchmark = GAP_BENCHMARKS[gapDataKey];
+  const currentOccupationDetailOptions = isGapMode ? gapOccupationDetailOptions : occupationDetailOptions;
+  const currentOccupationDetailStatus = isGapMode ? gapOccupationDetailStatus : occupationDetailStatus;
 
-  // Check if current combo is available
-  const comboAvailable = usesOccupationAgeBand
-    ? !!sourceData[period][dataKey]?.[selectedOccupationAgeBand]
-    : !!sourceData[period][dataKey];
+  const comboAvailable = isGapMode
+    ? data.length > 0
+    : usesOccupationAgeBand
+      ? !!sourceData[effectivePeriod][earningsDataKey]?.[selectedOccupationAgeBand]
+      : !!sourceData[effectivePeriod][earningsDataKey];
 
   return (
-    <div style={{
-      background: C.bg, minHeight: "100vh",
-      padding: isMobile ? "20px 10px" : "32px 20px",
-      fontFamily: "'DM Sans', 'Segoe UI', sans-serif", color: C.text,
-    }}>
+    <div
+      style={{
+        background: C.bg,
+        minHeight: "100vh",
+        padding: isMobile ? "20px 10px" : "32px 20px",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+        color: C.text,
+      }}
+    >
       <div ref={containerRef} style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
-
-        <h1 style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: isMobile ? 20 : 26, fontWeight: 600, color: "#f5f0e8",
-          margin: "0 0 4px",
-        }}>UK Earnings Explorer</h1>
+        <h1
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: isMobile ? 20 : 26,
+            fontWeight: 600,
+            color: "#f5f0e8",
+            margin: "0 0 4px",
+          }}
+        >
+          UK Earnings Explorer
+        </h1>
         <p style={{ color: C.muted, fontSize: isMobile ? 11 : 13, margin: "0 0 20px" }}>
           ASHE 2025 Provisional · Office for National Statistics
         </p>
 
-        {/* ── Filter row 1: Period / Gender / Work pattern ── */}
-        <div style={{
-          display: "flex", flexDirection: isMobile ? "column" : "row",
-          gap: isMobile ? 10 : 16, marginBottom: 16, flexWrap: "wrap",
-        }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: isMobile ? 10 : 16,
+            marginBottom: 16,
+            flexWrap: "wrap",
+          }}
+        >
           <div>
             <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Pay period</label>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              <Pill active={period==="annual"} onClick={() => setPeriod("annual")} isMobile={isMobile}>Annual</Pill>
-              <Pill active={period==="weekly"} onClick={() => setPeriod("weekly")} isMobile={isMobile}>Weekly</Pill>
-              <Pill active={period==="hourly"} onClick={() => setPeriod("hourly")} isMobile={isMobile}>Hourly</Pill>
-              <Pill active={period==="hours"} onClick={() => setPeriod("hours")} isMobile={isMobile}>Hours</Pill>
+              <Pill active={!isGapMode && period === "annual"} disabled={isGapMode} onClick={() => setPeriod("annual")} isMobile={isMobile}>Annual</Pill>
+              <Pill active={!isGapMode && period === "weekly"} disabled={isGapMode} onClick={() => setPeriod("weekly")} isMobile={isMobile}>Weekly</Pill>
+              <Pill active={effectivePeriod === "hourly"} disabled={isGapMode} onClick={() => setPeriod("hourly")} isMobile={isMobile}>Hourly</Pill>
+              <Pill active={!isGapMode && period === "hours"} disabled={isGapMode} onClick={() => setPeriod("hours")} isMobile={isMobile}>Hours</Pill>
             </div>
           </div>
           <div>
             <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Gender</label>
             <div style={{ display: "flex", gap: 4 }}>
-              <Pill active={gender==="all"} onClick={() => setGender("all")} isMobile={isMobile}>All</Pill>
-              <Pill active={gender==="male"} onClick={() => setGender("male")} isMobile={isMobile}>Male</Pill>
-              <Pill active={gender==="female"} onClick={() => setGender("female")} isMobile={isMobile}>Female</Pill>
+              <Pill active={effectiveGender === "all"} disabled={isGapMode} onClick={() => setGender("all")} isMobile={isMobile}>All</Pill>
+              <Pill active={!isGapMode && gender === "male"} disabled={isGapMode} onClick={() => setGender("male")} isMobile={isMobile}>Male</Pill>
+              <Pill active={!isGapMode && gender === "female"} disabled={isGapMode} onClick={() => setGender("female")} isMobile={isMobile}>Female</Pill>
             </div>
           </div>
           <div>
             <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Work pattern</label>
             <div style={{ display: "flex", gap: 4 }}>
-              <Pill active={work==="all"} onClick={() => setWork("all")} isMobile={isMobile}>All</Pill>
-              <Pill active={work==="ft"} onClick={() => setWork("ft")} isMobile={isMobile}>Full-Time</Pill>
+              <Pill active={work === "all"} onClick={() => setWork("all")} isMobile={isMobile}>All</Pill>
+              <Pill active={work === "ft"} onClick={() => setWork("ft")} isMobile={isMobile}>Full-Time</Pill>
             </div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Analysis</label>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            <Pill active={analysisMode === "earnings"} onClick={() => setAnalysisMode("earnings")} isMobile={isMobile}>Earnings</Pill>
+            <Pill active={analysisMode === "gap"} onClick={() => setAnalysisMode("gap")} isMobile={isMobile}>Gender pay gap</Pill>
           </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>View</label>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            <Pill active={view==="age"} onClick={() => setView("age")} isMobile={isMobile}>Age</Pill>
-            <Pill active={view==="occupation"} onClick={() => setView("occupation")} isMobile={isMobile}>Occupation</Pill>
-            <Pill active={view==="industry"} onClick={() => setView("industry")} isMobile={isMobile}>Industry</Pill>
-            <Pill active={view==="region"} onClick={() => setView("region")} isMobile={isMobile}>Region</Pill>
-            <Pill active={view==="sector"} onClick={() => setView("sector")} isMobile={isMobile}>Sector</Pill>
+            <Pill active={view === "age"} onClick={() => setView("age")} isMobile={isMobile}>Age</Pill>
+            <Pill active={view === "occupation"} onClick={() => setView("occupation")} isMobile={isMobile}>Occupation</Pill>
+            <Pill active={view === "industry"} onClick={() => setView("industry")} isMobile={isMobile}>Industry</Pill>
+            <Pill active={view === "region"} onClick={() => setView("region")} isMobile={isMobile}>Region</Pill>
+            <Pill active={view === "sector"} onClick={() => setView("sector")} isMobile={isMobile}>Sector</Pill>
           </div>
         </div>
 
-        {/* ── User inputs ── */}
-        <div style={{
-          display: "flex", gap: 10, marginBottom: !isAgeView ? 8 : 20, alignItems: "flex-end", flexWrap: "wrap",
-        }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginBottom: !isAgeView || isGapMode ? 8 : 20,
+            alignItems: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
           {isAgeView ? (
             <div style={{ width: isMobile ? "35%" : 60, flexShrink: 0 }}>
               <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Your age</label>
-              <input type="number" min="16" max="80" value={userAge}
-                onChange={e => setUserAge(e.target.value)}
+              <input
+                type="number"
+                min="16"
+                max="80"
+                value={userAge}
+                onChange={(e) => setUserAge(e.target.value)}
                 style={{
-                  width: "100%", padding: "10px", borderRadius: 6,
-                  border: `1px solid ${C.faint}`, background: C.card,
-                  color: C.text, fontSize: 15, fontFamily: "inherit", outline: "none",
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 6,
+                  border: `1px solid ${C.faint}`,
+                  background: C.card,
+                  color: C.text,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outline: "none",
                   boxSizing: "border-box",
-                }} />
+                }}
+              />
             </div>
           ) : (
             <div style={{ width: isMobile ? "100%" : isOccupationView ? 320 : 260, flexShrink: 0 }}>
@@ -597,10 +757,17 @@ export default function EarningsDashboard() {
                 value={viewConfig.selectorValue}
                 onChange={(e) => viewConfig.setSelectorValue(e.target.value)}
                 style={{
-                  width: "100%", padding: "10px", borderRadius: 6,
-                  border: `1px solid ${C.faint}`, background: C.card,
-                  color: viewConfig.selectorValue ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
-                  boxSizing: "border-box", appearance: "none",
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 6,
+                  border: `1px solid ${C.faint}`,
+                  background: C.card,
+                  color: viewConfig.selectorValue ? C.text : C.muted,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  appearance: "none",
                 }}
               >
                 <option value="">Select one</option>
@@ -612,6 +779,7 @@ export default function EarningsDashboard() {
               </select>
             </div>
           )}
+
           {isOccupationView && (
             <div style={{ width: isMobile ? "calc(42% - 5px)" : 126, flexShrink: 0 }}>
               <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Age band</label>
@@ -619,10 +787,17 @@ export default function EarningsDashboard() {
                 value={selectedOccupationAgeBand}
                 onChange={(e) => setSelectedOccupationAgeBand(e.target.value)}
                 style={{
-                  width: "100%", padding: "10px", borderRadius: 6,
-                  border: `1px solid ${C.faint}`, background: C.card,
-                  color: selectedOccupationAgeBand ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
-                  boxSizing: "border-box", appearance: "none",
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 6,
+                  border: `1px solid ${C.faint}`,
+                  background: C.card,
+                  color: selectedOccupationAgeBand ? C.text : C.muted,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  appearance: "none",
                 }}
               >
                 <option value="">All ages</option>
@@ -634,29 +809,37 @@ export default function EarningsDashboard() {
               </select>
             </div>
           )}
+
           {isOccupationView && selectedOccupation && !selectedOccupationAgeBand && (
             <div style={{ width: isMobile ? "100%" : 320, flexShrink: 0 }}>
               <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Job detail</label>
               <select
                 value={selectedOccupationDetail}
                 onChange={(e) => setSelectedOccupationDetail(e.target.value)}
-                disabled={occupationDetailStatus === "loading" || occupationDetailStatus === "error"}
+                disabled={currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error"}
                 style={{
-                  width: "100%", padding: "10px", borderRadius: 6,
-                  border: `1px solid ${C.faint}`, background: C.card,
-                  color: selectedOccupationDetail ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
-                  opacity: occupationDetailStatus === "loading" || occupationDetailStatus === "error" ? 0.65 : 1,
-                  boxSizing: "border-box", appearance: "none",
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 6,
+                  border: `1px solid ${C.faint}`,
+                  background: C.card,
+                  color: selectedOccupationDetail ? C.text : C.muted,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outline: "none",
+                  opacity: currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error" ? 0.65 : 1,
+                  boxSizing: "border-box",
+                  appearance: "none",
                 }}
               >
                 <option value="">
-                  {occupationDetailStatus === "loading"
+                  {currentOccupationDetailStatus === "loading"
                     ? "Loading job details..."
-                    : occupationDetailStatus === "error"
+                    : currentOccupationDetailStatus === "error"
                       ? "Job detail unavailable"
                       : "All job details"}
                 </option>
-                {occupationDetailOptions.map((option) => (
+                {currentOccupationDetailOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}
                   </option>
@@ -664,90 +847,131 @@ export default function EarningsDashboard() {
               </select>
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>
-              {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
-            </label>
-            <input type="text" inputMode="decimal" value={userSalary}
-              onChange={e => setUserSalary(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
-              style={{
-                width: "100%", padding: "10px", borderRadius: 6,
-                border: `1px solid ${C.faint}`, background: C.card,
-                color: C.text, fontSize: 15, fontFamily: "inherit", outline: "none",
-                boxSizing: "border-box",
-              }} />
-          </div>
+
+          {!isGapMode && (
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>
+                {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={userSalary}
+                onChange={(e) => setUserSalary(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 6,
+                  border: `1px solid ${C.faint}`,
+                  background: C.card,
+                  color: C.text,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          )}
         </div>
-        {!isAgeView && (
+
+        {(!isAgeView || isGapMode) && (
           <p style={{ color: C.dim, fontSize: isMobile ? 10 : 11, margin: "0 0 20px" }}>
-            {viewConfig.selectorNote}
+            {isGapMode
+              ? `Official mode: this always uses hourly pay excluding overtime. ${viewConfig?.selectorNote ?? "Gender pay gap mode uses official ONS hourly pay excluding overtime from ASHE Table 6."}`
+              : viewConfig.selectorNote}
           </p>
         )}
 
-        {/* Not available warning */}
         {!comboAvailable && (
-          <div style={{
-            padding: "10px 16px", marginBottom: 12, borderRadius: 8,
-            background: C.red + "15", border: `1px solid ${C.red}30`,
-            color: C.muted, fontSize: 12,
-          }}>
+          <div
+            style={{
+              padding: "10px 16px",
+              marginBottom: 12,
+              borderRadius: 8,
+              background: `${C.red}15`,
+              border: `1px solid ${C.red}30`,
+              color: C.muted,
+              fontSize: 12,
+            }}
+          >
             This combination isn't published by ONS. Showing closest available data.
           </div>
         )}
 
-        <EarningsChart
-          activeIdx={activeIdx}
-          availableKeys={availableKeys}
-          containerWidth={cw}
-          data={data}
-          fmt={fmt}
-          fmtGrid={fmtGrid}
-          handleColumnInteract={handleColumnInteract}
-          isHours={isHours}
-          isHourly={isHourly}
-          isMobile={isMobile}
-          isTablet={isTablet}
-          isWeekly={isWeekly}
-          salary={salary}
-          selectedBucketId={selectedBucketId}
-          setActiveIdx={setActiveIdx}
-        />
+        {isGapMode ? (
+          <>
+            <GenderGapChart
+              activeIdx={activeIdx}
+              containerWidth={cw}
+              data={data}
+              fmtRate={fmtRate}
+              handleColumnInteract={handleColumnInteract}
+              isMobile={isMobile}
+              isTablet={isTablet}
+              selectedBucketId={selectedBucketId}
+              setActiveIdx={setActiveIdx}
+            />
+            <GenderGapCard
+              benchmark={gapBenchmark}
+              emptyPrompt={emptyPrompt}
+              isMobile={isMobile}
+              selectedBucket={selectedBucket}
+              selectedLabel={selectedLabel}
+              workLabel={gapWorkLabel}
+            />
+          </>
+        ) : (
+          <>
+            <EarningsChart
+              activeIdx={activeIdx}
+              availableKeys={availableKeys}
+              containerWidth={cw}
+              data={data}
+              fmt={fmt}
+              fmtGrid={fmtGrid}
+              handleColumnInteract={handleColumnInteract}
+              isHours={isHours}
+              isHourly={isHourly}
+              isMobile={isMobile}
+              isTablet={isTablet}
+              isWeekly={isWeekly}
+              salary={salary}
+              selectedBucketId={selectedBucketId}
+              setActiveIdx={setActiveIdx}
+            />
+            <InsightCard
+              age={age}
+              availableKeys={availableKeys}
+              cohortDesc={insightCohortDesc}
+              compData={compData}
+              emptyPrompt={emptyPrompt}
+              fmt={fmt}
+              hoursPay={hoursPay}
+              isHours={isHours}
+              isHourly={isHourly}
+              isMobile={isMobile}
+              isTablet={isTablet}
+              isWeekly={isWeekly}
+              periodLabel={periodLabel}
+              periodUnit={periodUnit}
+              pctResult={pctResult}
+              percentileContext={percentileContext}
+              salary={salary}
+              selectedBucket={selectedBucket}
+              selectedLabel={selectedLabel}
+              selectionType={view}
+            />
+          </>
+        )}
 
-        <InsightCard
-          age={age}
-          availableKeys={availableKeys}
-          cohortDesc={insightCohortDesc}
-          compData={compData}
-          emptyPrompt={emptyPrompt}
-          fmt={fmt}
-          hoursPay={hoursPay}
-          isHours={isHours}
-          isHourly={isHourly}
-          isMobile={isMobile}
-          isTablet={isTablet}
-          isWeekly={isWeekly}
-          periodLabel={periodLabel}
-          periodUnit={periodUnit}
-          pctResult={pctResult}
-          percentileContext={percentileContext}
-          salary={salary}
-          selectedBucket={selectedBucket}
-          selectedLabel={selectedLabel}
-          selectionType={view}
-        />
-
-        <p style={{
-          fontSize: isMobile ? 9 : 10, color: "#3a3830",
-          marginTop: 16, lineHeight: 1.5,
-        }}>
-          Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional.
-          Employees on adult rates in same job for &gt;1 year.
-          {isOccupationView && ` Occupation view uses SOC20 major groups${usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.`}
-          {isIndustryView && " Industry view uses SIC2007 section groupings."}
-          {isRegionView && " Region view uses workplace regions."}
-          {isSectorView && " Sector view uses public, private, and non-profit groupings."}
-          {usesOccupationDetail && " The x-axis uses 4-digit SOC codes to keep detailed charts readable."}
-          {isDesktop && " Hover columns for detail."}
+        <p style={{ fontSize: isMobile ? 9 : 10, color: "#3a3830", marginTop: 16, lineHeight: 1.5 }}>
+          Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional. Employees on adult rates in same job for &gt;1 year.
+          {isGapMode
+            ? ` Gender pay gap mode uses the official ONS formula based on hourly pay excluding overtime.${work === "ft" ? " The current UK full-time benchmark is 6.9%." : " The current UK all-employee benchmark is 12.8%."}`
+            : `${isOccupationView ? ` Occupation view uses SOC20 major groups${usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.` : ""}${isIndustryView ? " Industry view uses SIC2007 section groupings." : ""}${isRegionView ? " Region view uses workplace regions." : ""}${isSectorView ? " Sector view uses public, private, and non-profit groupings." : ""}`}
+          {!isGapMode && usesOccupationDetail && " The x-axis uses 4-digit SOC codes to keep detailed charts readable."}
+          {isDesktop && ` Hover ${isGapMode ? "categories" : "columns"} for detail.`}
         </p>
       </div>
     </div>
