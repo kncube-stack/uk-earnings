@@ -77,6 +77,11 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Updated the selected badge in mobile chart states so the chosen band or category always shows its median value even before the user enters their own pay.
 - Kept the change in the selected state rather than adding more persistent chart clutter.
 
+### Phase 11
+
+- Added a production-only fresh-open path so the app forces a cache-busting reload when opened, which is especially useful for mobile web-app style launches.
+- Added Vercel cache headers to keep the HTML document itself out of stale caches while leaving hashed assets to version normally.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.

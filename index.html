@@ -12,6 +12,26 @@
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       body { background: #0b0e13; }
     </style>
+    <script>
+      (function forceFreshOpen() {
+        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return;
+
+        try {
+          const key = `uk-earnings-fresh:${location.pathname}`;
+          const navEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+          const isReload = navEntry && navEntry.type === "reload";
+          const url = new URL(location.href);
+
+          if (!sessionStorage.getItem(key) && !isReload) {
+            sessionStorage.setItem(key, "1");
+            url.searchParams.set("__fresh", Date.now().toString());
+            location.replace(url.toString());
+          }
+        } catch (_error) {
+          // Ignore storage/navigation edge cases and continue loading normally.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
