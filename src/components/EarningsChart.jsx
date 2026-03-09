@@ -1,3 +1,6 @@
+import { useMemo } from "react";
+
+import { useCenterSelectedScroll } from "../hooks/useCenterSelectedScroll";
 import { PL, PV } from "../percentiles";
 import { C, dotColor } from "../theme";
 import { getAxisDensity, getAxisLabelLines, getMobileChartHint } from "../utils/chartLabels";
@@ -37,6 +40,18 @@ export default function EarningsChart({
   const labelLineCount = detailAxis ? 1 : denseAxis ? 2 : 1;
   const bottomPad = compactMobile ? 86 : isMobile ? 74 : denseAxis ? 82 : 60;
   const chartScrollable = actualWidth > containerWidth;
+  const selectedIndex = useMemo(
+    () => data.findIndex((row) => (row.id ?? row.label) === selectedBucketId),
+    [data, selectedBucketId],
+  );
+  const scrollRef = useCenterSelectedScroll({
+    barWidth,
+    containerWidth,
+    gap,
+    leftPad: left,
+    scrollable: chartScrollable,
+    selectedIndex,
+  });
 
   const dataMax = Math.max(...data.flatMap((row) => availableKeys.map((key) => row[key]).filter(Boolean)));
   const scaleMax = Math.max(dataMax, Math.min(salary || 0, dataMax * 1.35));
@@ -96,7 +111,17 @@ export default function EarningsChart({
         </div>
       )}
 
-      <div style={{ marginBottom: 8, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
+      <div
+        ref={scrollRef}
+        style={{
+          marginBottom: 8,
+          overflowX: "auto",
+          overflowY: "hidden",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorX: "contain",
+          scrollBehavior: "smooth",
+        }}
+      >
         <svg
           width={Math.max(actualWidth, containerWidth - 8)}
           height={top + height + bottomPad}

@@ -1,3 +1,6 @@
+import { useMemo } from "react";
+
+import { useCenterSelectedScroll } from "../hooks/useCenterSelectedScroll";
 import { C } from "../theme";
 import { getAxisDensity, getAxisLabelLines, getMobileChartHint } from "../utils/chartLabels";
 
@@ -29,6 +32,18 @@ export default function GenderGapChart({
   const labelLineCount = detailAxis ? 1 : denseAxis ? 2 : 1;
   const bottomPad = compactMobile ? 92 : isMobile ? 82 : denseAxis ? 90 : 68;
   const chartScrollable = actualWidth > containerWidth;
+  const selectedIndex = useMemo(
+    () => data.findIndex((row) => (row.id ?? row.label) === selectedBucketId),
+    [data, selectedBucketId],
+  );
+  const scrollRef = useCenterSelectedScroll({
+    barWidth,
+    containerWidth,
+    gap,
+    leftPad: left,
+    scrollable: chartScrollable,
+    selectedIndex,
+  });
 
   const valueMax = Math.max(
     ...data.flatMap((row) => [row.maleMedian, row.femaleMedian]).filter((value) => value != null),
@@ -67,7 +82,17 @@ export default function GenderGapChart({
         </div>
       )}
 
-      <div style={{ marginBottom: 8, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
+      <div
+        ref={scrollRef}
+        style={{
+          marginBottom: 8,
+          overflowX: "auto",
+          overflowY: "hidden",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorX: "contain",
+          scrollBehavior: "smooth",
+        }}
+      >
         <svg
           width={Math.max(actualWidth, containerWidth - 8)}
           height={top + height + bottomPad}
