@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useCenterSelectedScroll } from "../hooks/useCenterSelectedScroll";
 import { PL, PV } from "../percentiles";
 import { C, dotColor } from "../theme";
-import { getAxisDensity, getAxisLabelLines, getMobileChartHint } from "../utils/chartLabels";
+import { getAxisDensity, getAxisLabelLines, getMobileChartHint, getSelectedDisplayLabel } from "../utils/chartLabels";
 
 export default function EarningsChart({
   activeIdx,
@@ -35,10 +35,10 @@ export default function EarningsChart({
   const actualWidth = left + data.length * barWidth + (data.length - 1) * gap + rightPad;
   const height = compactMobile ? 292 : isMobile ? 320 : isTablet ? 370 : 420;
   const top = 46;
-  const labelMaxChars = detailAxis ? 8 : denseAxis ? (isMobile ? 10 : 14) : 12;
+  const labelMaxChars = detailAxis ? (isMobile ? 10 : 12) : denseAxis ? (isMobile ? 10 : 14) : 12;
   const labelLineHeight = compactMobile ? 9 : isMobile ? 10 : 12;
-  const labelLineCount = detailAxis ? 1 : denseAxis ? 2 : 1;
-  const bottomPad = compactMobile ? 86 : isMobile ? 74 : denseAxis ? 82 : 60;
+  const labelLineCount = detailAxis ? (isMobile ? 1 : 2) : denseAxis ? 2 : 1;
+  const bottomPad = detailAxis && !isMobile ? 96 : compactMobile ? 86 : isMobile ? 74 : denseAxis ? 82 : 60;
   const chartScrollable = actualWidth > containerWidth;
   const selectedIndex = useMemo(
     () => data.findIndex((row) => (row.id ?? row.label) === selectedBucketId),
@@ -109,7 +109,7 @@ export default function EarningsChart({
         >
           <span style={{ color: C.gold, fontWeight: 700, whiteSpace: "nowrap" }}>Selected</span>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {selectedRow.label}
+            {getSelectedDisplayLabel(selectedRow, selectionType)}
           </span>
         </div>
       )}

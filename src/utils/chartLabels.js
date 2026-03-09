@@ -45,6 +45,93 @@ const SECTOR_LABELS = {
   "not-classified": { desktop: ["Unclassified"], mobile: ["Unclass."] },
 };
 
+const DETAIL_OVERRIDES = [
+  [/^large goods vehicle drivers$/i, "LGV drivers"],
+  [/^bus and coach drivers$/i, "Bus/coach"],
+  [/^taxi and cab drivers and chauffeurs$/i, "Taxi/cab"],
+  [/^delivery drivers and couriers$/i, "Delivery"],
+  [/^driving instructors$/i, "Driving instr."],
+  [/^road transport drivers n\.e\.c\.$/i, "Road transport"],
+  [/^crane drivers$/i, "Crane drivers"],
+  [/^fork-lift truck drivers$/i, "Fork-lift"],
+  [/^mobile machine drivers and operatives n\.e\.c\.$/i, "Mobile machine"],
+  [/^train and tram drivers$/i, "Train/tram"],
+  [/^marine and waterways transport operatives$/i, "Marine transport"],
+  [/^air transport operatives$/i, "Air transport"],
+  [/^rail transport operatives$/i, "Rail transport"],
+  [/^other drivers and transport operatives n\.e\.c\.$/i, "Other transport"],
+];
+
+const DETAIL_ABBREVIATIONS = new Map([
+  ["administrative", "admin"],
+  ["administration", "admin"],
+  ["advisers", "advisers"],
+  ["analysts", "analysts"],
+  ["and", "&"],
+  ["assistants", "assts"],
+  ["assistant", "asst"],
+  ["associates", "assoc."],
+  ["associate", "assoc."],
+  ["chauffeurs", "chauffeurs"],
+  ["communications", "comms"],
+  ["communication", "comms"],
+  ["coordinators", "coords"],
+  ["coordinator", "coord."],
+  ["customer", "customer"],
+  ["development", "dev."],
+  ["directors", "dirs"],
+  ["director", "dir."],
+  ["distribution", "distribution"],
+  ["engineers", "engineers"],
+  ["engineering", "engineering"],
+  ["executives", "execs"],
+  ["executive", "exec"],
+  ["information", "info"],
+  ["instructors", "instr."],
+  ["instructor", "instr."],
+  ["laboratory", "lab"],
+  ["logistics", "logistics"],
+  ["maintenance", "maint."],
+  ["management", "mgmt"],
+  ["manager", "mgr"],
+  ["managers", "mgrs"],
+  ["manufacturing", "mfg"],
+  ["marketing", "marketing"],
+  ["motor", "motor"],
+  ["occupations", "roles"],
+  ["occupation", "role"],
+  ["officials", "officials"],
+  ["operative", "operative"],
+  ["operatives", "operatives"],
+  ["operators", "operators"],
+  ["operator", "operator"],
+  ["production", "production"],
+  ["professional", "prof."],
+  ["professionals", "profs"],
+  ["programme", "programme"],
+  ["programmers", "programmers"],
+  ["project", "project"],
+  ["quality", "quality"],
+  ["representatives", "reps"],
+  ["representative", "rep"],
+  ["scientific", "scientific"],
+  ["secretarial", "secretarial"],
+  ["senior", "senior"],
+  ["services", "services"],
+  ["service", "service"],
+  ["specialists", "specialists"],
+  ["specialist", "specialist"],
+  ["support", "support"],
+  ["supervisors", "supervisors"],
+  ["supervisor", "supervisor"],
+  ["technical", "technical"],
+  ["technicians", "techs"],
+  ["technician", "tech"],
+  ["transport", "transport"],
+  ["vehicle", "vehicle"],
+  ["warehousing", "warehousing"],
+]);
+
 function defaultWrap(label, maxCharsPerLine, maxLines = 2) {
   if (!label) return [""];
 
@@ -104,6 +191,35 @@ function curatedLines(row, selectionType, isMobile) {
   return isMobile ? preset.mobile : preset.desktop;
 }
 
+function isOccupationDetailRow(row, selectionType) {
+  return selectionType === "occupation" && /^\d{4}$/.test(String(row.id ?? row.shortLabel ?? ""));
+}
+
+function shortenOccupationDetailLabel(label, isMobile) {
+  if (!label) return "";
+
+  for (const [pattern, replacement] of DETAIL_OVERRIDES) {
+    if (pattern.test(label)) return replacement;
+  }
+
+  const cleaned = String(label)
+    .replace(/\bn\.e\.c\.\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = cleaned
+    .split(" ")
+    .map((word) => {
+      const normalized = word.toLowerCase();
+      return DETAIL_ABBREVIATIONS.get(normalized) ?? word;
+    })
+    .filter((word) => word && word !== "&");
+
+  if (words.length <= 2) return words.join(" ");
+  if (isMobile) return words.slice(0, 2).join(" ");
+  return words.slice(0, 3).join(" ");
+}
+
 export function getAxisDensity({ data, isMobile, selectionType }) {
   const longestAxisLabel = Math.max(...data.map((row) => String(row.shortLabel ?? row.label ?? "").length), 0);
   const detailAxis = data.length >= 16 || data.every((row) => /^\d{4}$/.test(String(row.shortLabel ?? row.id ?? "")));
@@ -117,7 +233,18 @@ export function getAxisDensity({ data, isMobile, selectionType }) {
 export function getAxisLabelLines(row, { isMobile, maxCharsPerLine, maxLines, selectionType }) {
   const curated = curatedLines(row, selectionType, isMobile);
   if (curated) return curated.slice(0, maxLines);
+  if (isOccupationDetailRow(row, selectionType)) {
+    return defaultWrap(shortenOccupationDetailLabel(row.label, isMobile), maxCharsPerLine, maxLines);
+  }
   return defaultWrap(row.shortLabel ?? row.label, maxCharsPerLine, maxLines);
+}
+
+export function getSelectedDisplayLabel(row, selectionType) {
+  if (!row) return "";
+  if (isOccupationDetailRow(row, selectionType)) {
+    return `${row.id} · ${row.label}`;
+  }
+  return row.label;
 }
 
 export function getMobileChartHint({ chartScrollable, compactMobile, isGapMode }) {

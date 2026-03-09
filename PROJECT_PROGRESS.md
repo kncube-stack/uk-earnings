@@ -66,6 +66,12 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Added automatic centering so the currently selected age band or category scrolls into view instead of forcing the user to find it manually.
 - Reused the same centering behavior in both the earnings chart and the gender pay gap chart for consistency.
 
+### Phase 9
+
+- Replaced bare four-digit occupation codes on detailed job charts with shorter recognisable job labels on the axis.
+- Kept full official ONS job titles in the selector and selected badge so the UI balances readability with source fidelity.
+- Applied the same detailed-job labeling strategy in both earnings and gender pay gap chart modes.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.
