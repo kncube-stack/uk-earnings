@@ -62,13 +62,13 @@ export default function EarningsChart({
 
   return (
     <>
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: 8, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
         <svg
-          width="100%"
+          width={Math.max(actualWidth, containerWidth - 8)}
           height={top + height + 60}
           viewBox={`0 0 ${actualWidth} ${top + height + 60}`}
-          preserveAspectRatio="xMidYMid meet"
-          style={{ display: "block", touchAction: "pan-y" }}
+          preserveAspectRatio="xMinYMid meet"
+          style={{ display: "block", touchAction: "pan-y", minWidth: "100%" }}
         >
           {gridLines.map((value) => (
             <g key={value}>

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import EarningsChart from "./components/EarningsChart";
 import InsightCard from "./components/InsightCard";
@@ -265,6 +265,9 @@ export default function EarningsDashboard() {
   const [userAge, setUserAge] = useState("");
   const [selectedOccupation, setSelectedOccupation] = useState("");
   const [selectedOccupationAgeBand, setSelectedOccupationAgeBand] = useState("");
+  const [selectedOccupationDetail, setSelectedOccupationDetail] = useState("");
+  const [occupationDetailData, setOccupationDetailData] = useState(null);
+  const [occupationDetailStatus, setOccupationDetailStatus] = useState("idle");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSector, setSelectedSector] = useState("");
@@ -304,9 +307,13 @@ export default function EarningsDashboard() {
         selectorOptions: OCCUPATION_OPTIONS,
         selectorValue: selectedOccupation,
         setSelectorValue: setSelectedOccupation,
-        selectorNote: selectedOccupationAgeBand
-          ? "Occupation view uses official ONS SOC20 major occupation groups with age-band refinement from ASHE Table 20."
-          : "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2.",
+        selectorNote: occupationDetailStatus === "loading"
+          ? "Loading official ONS Table 14 job detail."
+          : selectedOccupationDetail
+          ? "Detailed occupation view uses official ONS 4-digit SOC job data from ASHE Table 14."
+          : selectedOccupationAgeBand
+            ? "Occupation view uses official ONS SOC20 major occupation groups with age-band refinement from ASHE Table 20. Four-digit job detail is only published here for all ages."
+            : "Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2, with optional 4-digit drill-down from Table 14.",
       }
     : isIndustryView
       ? {
@@ -338,6 +345,80 @@ export default function EarningsDashboard() {
           : null;
 
   const usesOccupationAgeBand = isOccupationView && selectedOccupationAgeBand;
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!(isOccupationView && selectedOccupation) || usesOccupationAgeBand || occupationDetailData || occupationDetailStatus === "loading") {
+      return undefined;
+    }
+
+    setOccupationDetailStatus("loading");
+
+    import("./data/asheOccupationDetail")
+      .then((module) => {
+        if (cancelled) return;
+        setOccupationDetailData(module.OCCUPATION_DETAIL_DATA);
+        setOccupationDetailStatus("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOccupationDetailStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isOccupationView,
+    occupationDetailData,
+    occupationDetailStatus,
+    selectedOccupation,
+    usesOccupationAgeBand,
+  ]);
+
+  const occupationDetailSeries = useMemo(() => {
+    if (!(isOccupationView && selectedOccupation) || usesOccupationAgeBand || !occupationDetailData) return [];
+
+    const periodData = occupationDetailData[period];
+    if (!periodData) return [];
+    const detailByCohort = periodData[dataKey] || periodData.all;
+    return detailByCohort?.[selectedOccupation] || [];
+  }, [dataKey, isOccupationView, occupationDetailData, period, selectedOccupation, usesOccupationAgeBand]);
+
+  const occupationDetailOptions = useMemo(
+    () =>
+      occupationDetailSeries.map(({ id, label }) => ({
+        id,
+        label,
+        shortLabel: id,
+      })),
+    [occupationDetailSeries],
+  );
+
+  const usesOccupationDetail =
+    isOccupationView &&
+    !usesOccupationAgeBand &&
+    !!selectedOccupation &&
+    !!selectedOccupationDetail &&
+    occupationDetailSeries.some(({ id }) => id === selectedOccupationDetail);
+
+  useEffect(() => {
+    if (!isOccupationView || usesOccupationAgeBand || !selectedOccupation) {
+      setSelectedOccupationDetail("");
+      return;
+    }
+
+    if (selectedOccupationDetail && !occupationDetailSeries.some(({ id }) => id === selectedOccupationDetail)) {
+      setSelectedOccupationDetail("");
+    }
+  }, [
+    isOccupationView,
+    occupationDetailSeries,
+    selectedOccupation,
+    selectedOccupationDetail,
+    usesOccupationAgeBand,
+  ]);
+
   const sourceData = usesOccupationAgeBand
     ? AGE_OCCUPATION_DATA
     : isOccupationView
@@ -351,6 +432,8 @@ export default function EarningsDashboard() {
             : DATA;
   const data = usesOccupationAgeBand
     ? sourceData[period][dataKey]?.[selectedOccupationAgeBand] || []
+    : usesOccupationDetail
+      ? occupationDetailSeries
     : sourceData[period][dataKey] || sourceData[period].all;
   const isWeekly = period === "weekly";
 
@@ -364,7 +447,9 @@ export default function EarningsDashboard() {
   const ageGroupLabel = age ? findGroup(age) : null;
   const ageGroup = data.find(d => d.label === ageGroupLabel);
   const selectedBucketId = isOccupationView
-    ? selectedOccupation || null
+    ? usesOccupationDetail
+      ? selectedOccupationDetail || null
+      : selectedOccupation || null
     : isIndustryView
       ? selectedIndustry || null
       : isRegionView
@@ -418,6 +503,8 @@ export default function EarningsDashboard() {
         ? "in this region."
         : isSectorView
           ? "in this sector."
+          : usesOccupationDetail
+            ? "in this job detail."
           : usesOccupationAgeBand
             ? "in this age band and occupation group."
             : "in this occupation group.";
@@ -547,6 +634,36 @@ export default function EarningsDashboard() {
               </select>
             </div>
           )}
+          {isOccupationView && selectedOccupation && !selectedOccupationAgeBand && (
+            <div style={{ width: isMobile ? "100%" : 320, flexShrink: 0 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Job detail</label>
+              <select
+                value={selectedOccupationDetail}
+                onChange={(e) => setSelectedOccupationDetail(e.target.value)}
+                disabled={occupationDetailStatus === "loading" || occupationDetailStatus === "error"}
+                style={{
+                  width: "100%", padding: "10px", borderRadius: 6,
+                  border: `1px solid ${C.faint}`, background: C.card,
+                  color: selectedOccupationDetail ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
+                  opacity: occupationDetailStatus === "loading" || occupationDetailStatus === "error" ? 0.65 : 1,
+                  boxSizing: "border-box", appearance: "none",
+                }}
+              >
+                <option value="">
+                  {occupationDetailStatus === "loading"
+                    ? "Loading job details..."
+                    : occupationDetailStatus === "error"
+                      ? "Job detail unavailable"
+                      : "All job details"}
+                </option>
+                {occupationDetailOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>
               {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
@@ -625,10 +742,11 @@ export default function EarningsDashboard() {
         }}>
           Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional.
           Employees on adult rates in same job for &gt;1 year.
-          {isOccupationView && ` Occupation view uses SOC20 major groups${usesOccupationAgeBand ? " with Table 20 age-band refinement" : ""}.`}
+          {isOccupationView && ` Occupation view uses SOC20 major groups${usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.`}
           {isIndustryView && " Industry view uses SIC2007 section groupings."}
           {isRegionView && " Region view uses workplace regions."}
           {isSectorView && " Sector view uses public, private, and non-profit groupings."}
+          {usesOccupationDetail && " The x-axis uses 4-digit SOC codes to keep detailed charts readable."}
           {isDesktop && " Hover columns for detail."}
         </p>
       </div>

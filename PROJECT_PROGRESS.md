@@ -31,6 +31,13 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Added an age-band refine inside `Occupation` using official ONS ASHE 2025 Table 20 age-by-occupation data.
 - Kept the visual layout stable and only adjusted the selector row to wrap cleanly on mobile.
 
+### Phase 5
+
+- Added optional finer job detail inside `Occupation` using official ONS ASHE 2025 Table 14 four-digit occupation data.
+- Kept the existing occupation flow: major group first, then optional job detail drill-down.
+- Added horizontal chart scrolling only where needed so dense detailed occupation sets remain usable on mobile.
+- Kept age-band refine and 4-digit drill-down separate because this source set does not publish that combination here.
+
 ## Data Sources
 
 - Age view: embedded ASHE 2025 provisional age data already in the app.
@@ -39,6 +46,7 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - Region view: ONS ASHE Table 15.
 - Sector view: ONS ASHE Table 13.
 - Occupation age-band refine: ONS ASHE Table 20.
+- Occupation four-digit drill-down: ONS ASHE Table 14.
 
 ## Generator Scripts
 
@@ -47,6 +55,7 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 - `scripts/generate_region_data.py`
 - `scripts/generate_sector_data.py`
 - `scripts/generate_age_occupation_data.py`
+- `scripts/generate_occupation_detail_data.py`
 
 ## Current Verification
 
@@ -58,4 +67,4 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 
 - Region + occupation cross-filtering.
 - Region + industry cross-filtering.
-- Finer occupation detail where ONS suppression does not harm usability.
+- Additional cross-breakdowns only where they can be added without cluttering the current interaction model.
