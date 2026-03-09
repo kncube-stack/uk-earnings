@@ -87,7 +87,7 @@ export default function EarningsChart({
   };
   const dotRadius = isMobile ? 3 : 4;
   const medianRadius = isMobile ? 4.5 : 6;
-  const showDefaultMedianLabels = !(compactMobile && denseAxis);
+  const showDefaultMedianLabels = !(compactMobile && detailAxis);
   const selectedMedianLabel = selectedRow?.median != null ? `Median ${fmt(selectedRow.median)}` : null;
 
   return (
