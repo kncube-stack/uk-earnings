@@ -8,6 +8,7 @@ export default function InsightCard({
   availableKeys,
   cohortDesc,
   compData,
+  emptyPrompt,
   hoursPay,
   isHours,
   isHourly,
@@ -18,11 +19,12 @@ export default function InsightCard({
   periodUnit,
   pctResult,
   salary,
-  userGroup,
-  userGroupLabel,
+  selectedBucket,
+  selectedLabel,
+  selectionType,
   fmt,
 }) {
-  if (!(age && salary && userGroup)) {
+  if (!(selectedBucket && salary)) {
     return (
       <div
         style={{
@@ -36,16 +38,18 @@ export default function InsightCard({
           textAlign: "center",
         }}
       >
-        Enter your age and {isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary"} above to see where you fall.
+        {emptyPrompt}
       </div>
     );
   }
 
-  const median = userGroup.median;
+  const median = selectedBucket.median;
   const diff = salary - median;
   const pctDiff = Math.round((Math.abs(diff) / median) * 100);
   const annualGross = isHourly ? salary * (parseFloat(hoursPay) || 37.5) * 52 : isWeekly ? salary * 52 : salary;
   const taxProfile = !isHours && salary ? calcNetPay(annualGross) : null;
+  const isAgeView = selectionType === "age";
+  const percentileContext = isAgeView ? "in your age bracket." : "in this occupation group.";
 
   return (
     <div
@@ -69,9 +73,18 @@ export default function InsightCard({
       </div>
       <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: "#c5c0b6" }}>
         <>
-          At <strong style={{ color: C.red }}>{fmt(salary)}{periodUnit}</strong> aged <strong style={{ color: C.gold }}>{age}</strong>, you fall in the{" "}
-          <strong style={{ color: C.text }}>{userGroupLabel}</strong> age group. The median {periodLabel}
-          {isHours ? "" : " gross pay"} for {cohortDesc} in this group is <strong style={{ color: C.text }}>{fmt(median)}</strong>.
+          {isAgeView ? (
+            <>
+              At <strong style={{ color: C.red }}>{fmt(salary)}{periodUnit}</strong> aged <strong style={{ color: C.gold }}>{age}</strong>, you fall in the{" "}
+              <strong style={{ color: C.text }}>{selectedLabel}</strong> age group. The median {periodLabel}
+              {isHours ? "" : " gross pay"} for {cohortDesc} in this group is <strong style={{ color: C.text }}>{fmt(median)}</strong>.
+            </>
+          ) : (
+            <>
+              At <strong style={{ color: C.red }}>{fmt(salary)}{periodUnit}</strong> in <strong style={{ color: C.text }}>{selectedLabel}</strong>, the median {periodLabel}
+              {isHours ? "" : " gross pay"} for {cohortDesc} is <strong style={{ color: C.text }}>{fmt(median)}</strong>.
+            </>
+          )}
           {diff > 0 ? (
             <>
               {" "}
@@ -102,19 +115,19 @@ export default function InsightCard({
               <>
                 {" "}
                 That places you <strong style={{ color: C.gold }}>below the {pctResult.value}th percentile</strong> {isHours ? "working fewer hours than roughly" : "earning less than roughly"}{" "}
-                {100 - pctResult.value}% of {cohortDesc} in your age bracket.
+                {100 - pctResult.value}% of {cohortDesc} {percentileContext}
               </>
             ) : pctResult.above ? (
               <>
                 {" "}
                 That places you <strong style={{ color: C.gold }}>above the {pctResult.value}th percentile</strong> {isHours ? "working more hours than at least" : "earning more than at least"}{" "}
-                {pctResult.value}% of {cohortDesc} in your age bracket.
+                {pctResult.value}% of {cohortDesc} {percentileContext}
               </>
             ) : (
               <>
                 {" "}
                 That puts you at roughly the <strong style={{ color: C.gold }}>{pctResult.value}th percentile</strong> {isHours ? "working more hours than about" : "earning more than about"}{" "}
-                {pctResult.value}% of {cohortDesc} in your age bracket.
+                {pctResult.value}% of {cohortDesc} {percentileContext}
               </>
             ))}
         </>
@@ -133,7 +146,7 @@ export default function InsightCard({
         }}
       >
         {availableKeys.map((key) => {
-          const value = userGroup[key];
+          const value = selectedBucket[key];
           if (value == null) return null;
 
           const isAbove = salary >= value;
@@ -175,7 +188,7 @@ export default function InsightCard({
               fontWeight: 500,
             }}
           >
-            Average weekly pay breakdown · {userGroupLabel} age group
+            Average weekly pay breakdown · {selectedLabel} age group
           </div>
           <CompBar data={compData} isMobile={isMobile} colors={C} />
         </div>

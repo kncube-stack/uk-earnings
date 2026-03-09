@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import EarningsChart from "./components/EarningsChart";
 import InsightCard from "./components/InsightCard";
 import Pill from "./components/Pill";
+import { OCCUPATION_DATA, OCCUPATION_OPTIONS } from "./data/asheOccupation";
 import { useContainerWidth } from "./hooks/useContainerWidth";
 import { PK } from "./percentiles";
 import { C } from "./theme";
@@ -253,10 +254,12 @@ const COMP = {
 };
 
 export default function EarningsDashboard() {
+  const [view, setView] = useState("age");
   const [period, setPeriod] = useState("annual");
   const [gender, setGender] = useState("all");
   const [work, setWork] = useState("all");
   const [userAge, setUserAge] = useState("");
+  const [selectedOccupation, setSelectedOccupation] = useState("");
   const [annualPay, setAnnualPay] = useState("");
   const [weeklyPay, setWeeklyPay] = useState("");
   const [hourlyPay, setHourlyPay] = useState("");
@@ -268,6 +271,8 @@ export default function EarningsDashboard() {
   const isMobile = cw < 520;
   const isTablet = cw >= 520 && cw < 768;
   const isDesktop = cw >= 768;
+  const isAgeView = view === "age";
+  const isOccupationView = view === "occupation";
 
   // Derive the data key
   const dataKey = useMemo(() => {
@@ -281,7 +286,8 @@ export default function EarningsDashboard() {
     return "all";
   }, [gender, work]);
 
-  const data = DATA[period][dataKey] || DATA[period].all;
+  const sourceData = isOccupationView ? OCCUPATION_DATA : DATA;
+  const data = sourceData[period][dataKey] || sourceData[period].all;
   const isWeekly = period === "weekly";
 
   const rawAge = parseInt(userAge);
@@ -291,11 +297,14 @@ export default function EarningsDashboard() {
   const userSalary = isHours ? hoursPay : isHourly ? hourlyPay : isWeekly ? weeklyPay : annualPay;
   const setUserSalary = isHours ? setHoursPay : isHourly ? setHourlyPay : isWeekly ? setWeeklyPay : setAnnualPay;
   const salary = parseFloat(String(userSalary).replace(/[\u00a3,\s]/g, "")) || null;
-  const userGroupLabel = age ? findGroup(age) : null;
-  const userGroup = data.find(d => d.label === userGroupLabel);
-  const pctResult = userGroup && salary ? estimatePercentile(userGroup, salary) : null;
-  const userGroupIdx = data.findIndex(d => d.label === userGroupLabel);
-  const compData = COMP[dataKey] && userGroupIdx >= 0 ? COMP[dataKey][userGroupIdx] : null;
+  const ageGroupLabel = age ? findGroup(age) : null;
+  const ageGroup = data.find(d => d.label === ageGroupLabel);
+  const selectedBucketId = isOccupationView ? selectedOccupation || null : ageGroupLabel;
+  const selectedBucket = data.find((row) => (row.id ?? row.label) === selectedBucketId);
+  const selectedLabel = selectedBucket?.label ?? null;
+  const pctResult = selectedBucket && salary ? estimatePercentile(selectedBucket, salary) : null;
+  const ageGroupIdx = data.findIndex(d => d.label === ageGroupLabel);
+  const compData = isAgeView && COMP[dataKey] && ageGroupIdx >= 0 ? COMP[dataKey][ageGroupIdx] : null;
 
   const availableKeys = useMemo(() => PK.filter(k => data.some(d => d[k] != null)), [data]);
 
@@ -324,9 +333,12 @@ export default function EarningsDashboard() {
   const cohortDesc = `${genderLabel}${workLabel}`;
   const periodLabel = isHours ? "weekly hours" : isHourly ? "hourly" : isWeekly ? "weekly" : "annual";
   const periodUnit = isHours ? "/wk" : isHourly ? "/hr" : isWeekly ? "/week" : "/year";
+  const emptyPrompt = isAgeView
+    ? `Enter your age and ${isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary"} above to see where you fall.`
+    : `Choose an occupation group and enter your ${isHours ? "weekly hours" : isHourly ? "hourly rate" : isWeekly ? "weekly pay" : "annual salary"} above to see where you fall.`;
 
   // Check if current combo is available
-  const comboAvailable = !!DATA[period][dataKey];
+  const comboAvailable = !!sourceData[period][dataKey];
 
   return (
     <div style={{
@@ -376,21 +388,53 @@ export default function EarningsDashboard() {
           </div>
         </div>
 
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>View</label>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            <Pill active={view==="age"} onClick={() => setView("age")} isMobile={isMobile}>Age</Pill>
+            <Pill active={view==="occupation"} onClick={() => setView("occupation")} isMobile={isMobile}>Occupation</Pill>
+            <Pill active={false} disabled isMobile={isMobile}>Industry Soon</Pill>
+          </div>
+        </div>
+
         {/* ── User inputs ── */}
         <div style={{
-          display: "flex", gap: 10, marginBottom: 20, alignItems: "flex-end",
+          display: "flex", gap: 10, marginBottom: isOccupationView ? 8 : 20, alignItems: "flex-end",
         }}>
-          <div style={{ width: isMobile ? "35%" : 60, flexShrink: 0 }}>
-            <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Your age</label>
-            <input type="number" min="16" max="80" value={userAge}
-              onChange={e => setUserAge(e.target.value)}
-              style={{
-                width: "100%", padding: "10px", borderRadius: 6,
-                border: `1px solid ${C.faint}`, background: C.card,
-                color: C.text, fontSize: 15, fontFamily: "inherit", outline: "none",
-                boxSizing: "border-box",
-              }} />
-          </div>
+          {isAgeView ? (
+            <div style={{ width: isMobile ? "35%" : 60, flexShrink: 0 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Your age</label>
+              <input type="number" min="16" max="80" value={userAge}
+                onChange={e => setUserAge(e.target.value)}
+                style={{
+                  width: "100%", padding: "10px", borderRadius: 6,
+                  border: `1px solid ${C.faint}`, background: C.card,
+                  color: C.text, fontSize: 15, fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box",
+                }} />
+            </div>
+          ) : (
+            <div style={{ width: isMobile ? "52%" : 320, flexShrink: 0 }}>
+              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Occupation group</label>
+              <select
+                value={selectedOccupation}
+                onChange={(e) => setSelectedOccupation(e.target.value)}
+                style={{
+                  width: "100%", padding: "10px", borderRadius: 6,
+                  border: `1px solid ${C.faint}`, background: C.card,
+                  color: selectedOccupation ? C.text : C.muted, fontSize: 15, fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box", appearance: "none",
+                }}
+              >
+                <option value="">Select one</option>
+                {OCCUPATION_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>
               {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
@@ -405,6 +449,11 @@ export default function EarningsDashboard() {
               }} />
           </div>
         </div>
+        {isOccupationView && (
+          <p style={{ color: C.dim, fontSize: isMobile ? 10 : 11, margin: "0 0 20px" }}>
+            Occupation view uses official ONS SOC20 major occupation groups from ASHE Table 2.
+          </p>
+        )}
 
         {/* Not available warning */}
         {!comboAvailable && (
@@ -431,8 +480,8 @@ export default function EarningsDashboard() {
           isTablet={isTablet}
           isWeekly={isWeekly}
           salary={salary}
+          selectedBucketId={selectedBucketId}
           setActiveIdx={setActiveIdx}
-          userGroupLabel={userGroupLabel}
         />
 
         <InsightCard
@@ -440,6 +489,7 @@ export default function EarningsDashboard() {
           availableKeys={availableKeys}
           cohortDesc={cohortDesc}
           compData={compData}
+          emptyPrompt={emptyPrompt}
           fmt={fmt}
           hoursPay={hoursPay}
           isHours={isHours}
@@ -451,8 +501,9 @@ export default function EarningsDashboard() {
           periodUnit={periodUnit}
           pctResult={pctResult}
           salary={salary}
-          userGroup={userGroup}
-          userGroupLabel={userGroupLabel}
+          selectedBucket={selectedBucket}
+          selectedLabel={selectedLabel}
+          selectionType={view}
         />
 
         <p style={{
@@ -461,6 +512,7 @@ export default function EarningsDashboard() {
         }}>
           Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional.
           Employees on adult rates in same job for &gt;1 year.
+          {isOccupationView && " Occupation view uses SOC20 major groups."}
           {isDesktop && " Hover columns for detail."}
         </p>
       </div>

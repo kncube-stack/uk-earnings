@@ -15,8 +15,8 @@ export default function EarningsChart({
   isTablet,
   isWeekly,
   salary,
+  selectedBucketId,
   setActiveIdx,
-  userGroupLabel,
 }) {
   const left = isMobile ? 44 : 64;
   const rightPad = isMobile ? 12 : 30;
@@ -126,7 +126,8 @@ export default function EarningsChart({
 
           {data.map((row, index) => {
             const x = left + index * (barWidth + gap);
-            const isUser = row.label === userGroupLabel;
+            const rowId = row.id ?? row.label;
+            const isUser = rowId === selectedBucketId;
             const isActive = activeIdx === index;
             const accent = isUser ? C.gold : C.blue;
             const points = availableKeys
@@ -263,7 +264,7 @@ export default function EarningsChart({
                   fontWeight={isUser ? 700 : 400}
                   fontFamily="'DM Sans', sans-serif"
                 >
-                  {row.label}
+                  {row.shortLabel ?? row.label}
                 </text>
                 {isUser && (
                   <text
