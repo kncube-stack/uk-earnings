@@ -323,7 +323,7 @@ export default function EarningsDashboard() {
 
     if (
       isGapMode ||
-      !(isOccupationView && selectedOccupation) ||
+      !isOccupationView ||
       usesOccupationAgeBand ||
       occupationDetailData ||
       occupationDetailStatus === "loading"
@@ -351,8 +351,6 @@ export default function EarningsDashboard() {
     isGapMode,
     isOccupationView,
     occupationDetailData,
-    occupationDetailStatus,
-    selectedOccupation,
     usesOccupationAgeBand,
   ]);
 
@@ -383,7 +381,7 @@ export default function EarningsDashboard() {
 
     if (
       !isGapMode ||
-      !(isOccupationView && selectedOccupation) ||
+      !isOccupationView ||
       usesOccupationAgeBand ||
       gapOccupationDetailData ||
       gapOccupationDetailStatus === "loading"
@@ -409,10 +407,8 @@ export default function EarningsDashboard() {
     };
   }, [
     gapOccupationDetailData,
-    gapOccupationDetailStatus,
     isGapMode,
     isOccupationView,
-    selectedOccupation,
     usesOccupationAgeBand,
   ]);
 
