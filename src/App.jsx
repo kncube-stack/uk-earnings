@@ -374,7 +374,7 @@ export default function EarningsDashboard() {
     !usesOccupationAgeBand &&
     !!selectedOccupation &&
     !!selectedOccupationDetail &&
-    occupationDetailSeries.some(({ id }) => id === selectedOccupationDetail);
+    occupationDetailSeries.length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -428,7 +428,7 @@ export default function EarningsDashboard() {
     !usesOccupationAgeBand &&
     !!selectedOccupation &&
     !!selectedOccupationDetail &&
-    gapOccupationDetailSeries.some(({ id }) => id === selectedOccupationDetail);
+    gapOccupationDetailSeries.length > 0;
 
   useEffect(() => {
     if (!isOccupationView || usesOccupationAgeBand || !selectedOccupation) {
