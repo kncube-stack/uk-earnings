@@ -467,44 +467,110 @@ export default function HouseholdCard({ isMobile, isTablet }) {
 
       {result && (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
-              gap: isMobile ? 8 : 10,
-              marginBottom: 14,
-            }}
-          >
-            {[
-              { label: "Combined gross", value: fmtGbp(result.combinedGross), color: colors.text },
-              { label: "Income tax", value: fmtGbp(result.combinedTax), color: colors.red },
-              { label: "National Insurance", value: fmtGbp(result.combinedNi), color: colors.gold },
-              { label: "Pension", value: fmtGbp(result.combinedPension), color: colors.blue },
-              { label: "Combined take-home", value: fmtGbp(result.combinedNet), color: "#4ecb71" },
-              ...(result.childBenefit.gross > 0
-                ? [
-                    {
-                      label: result.childBenefit.clawback > 0 ? "Child Benefit (net)" : "Child Benefit",
-                      value: fmtGbp(result.childBenefit.net),
-                      color: "#4ecb71",
-                    },
-                  ]
-                : []),
-            ].map((item) => (
-              <div
-                key={item.label}
-                style={{
-                  padding: isMobile ? "8px 8px" : "10px 12px",
-                  borderRadius: 6,
-                  background: `${item.color}10`,
-                  border: `1px solid ${item.color}20`,
-                }}
-              >
-                <div style={{ fontSize: isMobile ? 10 : 11, color: colors.muted, marginBottom: 3 }}>{item.label}</div>
-                <div style={{ fontSize: isMobile ? 13 : 14, color: item.color, fontWeight: 700 }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
+          {[
+            { label: "Partner 1", data: result.partner1, gross: g1, accent: colors.blue },
+            { label: "Partner 2", data: result.partner2, gross: g2, accent: colors.gold },
+          ]
+            .filter((p) => p.gross > 0)
+            .map((partner) => {
+              const parts = [
+                { label: "Take-home", value: partner.data.net, color: "#4ecb71" },
+                { label: "Income tax", value: partner.data.tax, color: "#e05c3a" },
+                { label: "NI", value: partner.data.ni, color: "#d4a843" },
+                { label: "Pension", value: partner.data.pension, color: "#6fa9ff" },
+                { label: "Student loan", value: partner.data.studentLoan, color: "#8c77f4" },
+                { label: "Postgrad loan", value: partner.data.postgraduateLoan, color: "#d980fa" },
+              ].filter((p) => p.value > 0 || p.label === "Take-home");
+              const total = parts.reduce((s, p) => s + p.value, 0);
+              return (
+                <div
+                  key={partner.label}
+                  style={{
+                    padding: isMobile ? "10px 10px" : "12px 14px",
+                    background: colors.bg,
+                    borderRadius: 8,
+                    border: `1px solid ${colors.faint}`,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: partner.accent,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      marginBottom: 6,
+                    }}
+                  >
+                    {partner.label} · {fmtGbp(partner.gross)} gross
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      height: isMobile ? 16 : 20,
+                      borderRadius: 5,
+                      overflow: "hidden",
+                      background: colors.faint,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {parts.map((part, i) => (
+                      <div
+                        key={part.label}
+                        style={{
+                          width: `${((part.value / total) * 100).toFixed(1)}%`,
+                          background: part.color,
+                          opacity: 0.75,
+                          borderRight: i < parts.length - 1 ? `1px solid ${colors.bg}` : "none",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: isMobile ? 6 : 12,
+                      flexWrap: "wrap",
+                      fontSize: isMobile ? 10 : 11,
+                      color: colors.muted,
+                    }}
+                  >
+                    {parts.map((part) => (
+                      <span key={part.label} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: 2,
+                            background: part.color,
+                            opacity: 0.75,
+                            display: "inline-block",
+                          }}
+                        />
+                        {part.label}: <strong style={{ color: colors.text }}>{fmtGbp(part.value)}</strong>
+                        <span style={{ color: colors.dim }}>({Math.round((part.value / total) * 100)}%)</span>
+                      </span>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      paddingTop: 5,
+                      borderTop: `1px solid ${colors.faint}`,
+                      display: "flex",
+                      gap: isMobile ? 8 : 16,
+                      fontSize: isMobile ? 10 : 11,
+                      color: colors.muted,
+                    }}
+                  >
+                    <span>Monthly: <strong style={{ color: "#4ecb71" }}>{fmtGbp(partner.data.net / 12)}</strong></span>
+                    <span>Weekly: <strong style={{ color: "#4ecb71" }}>{fmtGbp(partner.data.net / 52)}</strong></span>
+                    <span>Effective rate: <strong style={{ color: colors.text }}>{partner.data.effectiveRate}%</strong></span>
+                  </div>
+                </div>
+              );
+            })}
 
           {result.childBenefit.clawback > 0 && (
             <div
@@ -528,6 +594,15 @@ export default function HouseholdCard({ isMobile, isTablet }) {
               marginBottom: 14,
             }}
           >
+            {result.childBenefit.gross > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: isMobile ? 11 : 12, color: colors.muted, marginBottom: 6 }}>
+                <span>
+                  Child Benefit
+                  {result.childBenefit.clawback > 0 && <span style={{ color: colors.dim }}> (after HICBC)</span>}
+                </span>
+                <strong style={{ color: "#4ecb71" }}>+{fmtGbp(result.childBenefit.net)}/yr</strong>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
               <span style={{ fontSize: isMobile ? 12 : 13, color: colors.muted }}>Total household disposable</span>
               <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: "#4ecb71" }}>
