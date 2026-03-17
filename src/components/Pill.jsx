@@ -1,6 +1,7 @@
-import { C } from "../theme";
+import { useTheme } from "../theme";
 
 export default function Pill({ active, disabled = false, onClick, children, isMobile }) {
+  const { colors } = useTheme();
   return (
     <button
       disabled={disabled}
@@ -8,9 +9,9 @@ export default function Pill({ active, disabled = false, onClick, children, isMo
       style={{
         padding: isMobile ? "8px 12px" : "7px 14px",
         borderRadius: 6,
-        border: `1px solid ${active ? C.gold : C.faint}`,
-        background: active ? `${C.gold}18` : "transparent",
-        color: active ? C.gold : disabled ? `${C.dim}99` : C.dim,
+        border: `1px solid ${active ? colors.gold : colors.faint}`,
+        background: active ? `${colors.gold}18` : "transparent",
+        color: active ? colors.gold : disabled ? `${colors.dim}99` : colors.dim,
         fontSize: isMobile ? 12 : 13,
         fontWeight: 500,
         cursor: disabled ? "default" : "pointer",

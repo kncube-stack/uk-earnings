@@ -1,4 +1,7 @@
-export default function CompBar({ data, isMobile, colors }) {
+import { useTheme } from "../theme";
+
+export default function CompBar({ data, isMobile }) {
+  const { colors } = useTheme();
   if (!data) return null;
 
   const total = (data.basic || 0) + (data.ot || 0) + (data.other || 0);
@@ -55,7 +58,7 @@ export default function CompBar({ data, isMobile, colors }) {
                 display: "inline-block",
               }}
             />
-            {part.label}: <strong style={{ color: colors.text }}>{`£${Math.round(part.value)}`}/wk</strong>
+            {part.label}: <strong style={{ color: colors.text }}>{`\u00A3${Math.round(part.value)}`}/wk</strong>
             <span style={{ color: colors.dim }}>({Math.round((part.value / total) * 100)}%)</span>
           </span>
         ))}
@@ -81,8 +84,8 @@ export default function CompBar({ data, isMobile, colors }) {
                 display: "inline-block",
               }}
             />
-            Annual incentive/bonus: <strong style={{ color: colors.text }}>{`£${data.inc.toLocaleString("en-GB")}`}</strong>
-            <span style={{ color: colors.dim }}>({`£${Math.round(data.inc / 52)}`}/wk equiv.)</span>
+            Annual incentive/bonus: <strong style={{ color: colors.text }}>{`\u00A3${data.inc.toLocaleString("en-GB")}`}</strong>
+            <span style={{ color: colors.dim }}>({`\u00A3${Math.round(data.inc / 52)}`}/wk equiv.)</span>
           </span>
         </div>
       )}

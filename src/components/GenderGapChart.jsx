@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { useCenterSelectedScroll } from "../hooks/useCenterSelectedScroll";
-import { C } from "../theme";
+import { useTheme } from "../theme";
 import { getAxisDensity, getAxisLabelLines, getMobileChartHint, getSelectedDisplayLabel } from "../utils/chartLabels";
 
 export default function GenderGapChart({
@@ -16,6 +16,7 @@ export default function GenderGapChart({
   selectedBucketId,
   setActiveIdx,
 }) {
+  const { colors } = useTheme();
   const left = isMobile ? 46 : 68;
   const rightPad = isMobile ? 14 : 32;
   const usableWidth = Math.max(220, containerWidth - 8 - left - rightPad);
@@ -61,7 +62,7 @@ export default function GenderGapChart({
   }
 
   const selectedMedianLabel = selectedRow
-    ? `Men ${fmtRate(selectedRow.maleMedian)} · Women ${fmtRate(selectedRow.femaleMedian)}`
+    ? `Men ${fmtRate(selectedRow.maleMedian)} \u00B7 Women ${fmtRate(selectedRow.femaleMedian)}`
     : null;
 
   return (
@@ -76,19 +77,19 @@ export default function GenderGapChart({
             marginBottom: 8,
             padding: isMobile ? "6px 10px" : "7px 12px",
             borderRadius: 999,
-            border: `1px solid ${C.gold}33`,
-            background: `${C.gold}10`,
-            color: C.text,
+            border: `1px solid ${colors.gold}33`,
+            background: `${colors.gold}10`,
+            color: colors.text,
             fontSize: isMobile ? 11 : 12,
             maxWidth: "100%",
           }}
         >
-          <span style={{ color: C.gold, fontWeight: 700, whiteSpace: "nowrap" }}>Selected</span>
+          <span style={{ color: colors.gold, fontWeight: 700, whiteSpace: "nowrap" }}>Selected</span>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {getSelectedDisplayLabel(selectedRow, selectionType)}
           </span>
           {isMobile && selectedMedianLabel && (
-            <span style={{ color: C.text, fontWeight: 600, whiteSpace: "nowrap" }}>
+            <span style={{ color: colors.text, fontWeight: 600, whiteSpace: "nowrap" }}>
               {selectedMedianLabel}
             </span>
           )}
@@ -120,14 +121,14 @@ export default function GenderGapChart({
                 x2={actualWidth - rightPad + 4}
                 y1={y(value)}
                 y2={y(value)}
-                stroke={C.faint}
+                stroke={colors.faint}
                 strokeWidth={0.7}
               />
               <text
                 x={left - 8}
                 y={y(value) + 4}
                 textAnchor="end"
-                fill={C.dim}
+                fill={colors.dim}
                 fontSize={isMobile ? 8 : 10}
                 fontFamily="'DM Sans', sans-serif"
               >
@@ -161,8 +162,8 @@ export default function GenderGapChart({
                     width={barWidth + 8}
                     height={height + 6}
                     rx={5}
-                    fill={`${C.gold}08`}
-                    stroke={`${C.gold}20`}
+                    fill={`${colors.gold}08`}
+                    stroke={`${colors.gold}20`}
                     strokeWidth={1}
                   />
                 )}
@@ -173,7 +174,7 @@ export default function GenderGapChart({
                     x2={x + barWidth / 2}
                     y1={maleY}
                     y2={femaleY}
-                    stroke={C.muted}
+                    stroke={colors.muted}
                     strokeWidth={2}
                     opacity={0.45}
                   />
@@ -184,8 +185,8 @@ export default function GenderGapChart({
                     cx={x + barWidth / 2}
                     cy={maleY}
                     r={isUser ? (isMobile ? 6 : 7) : isMobile ? 4.5 : 5.5}
-                    fill={C.blue}
-                    stroke={isUser ? C.text : "none"}
+                    fill={colors.blue}
+                    stroke={isUser ? colors.text : "none"}
                     strokeWidth={isUser ? 1.5 : 0}
                   />
                 )}
@@ -195,8 +196,8 @@ export default function GenderGapChart({
                     cx={x + barWidth / 2}
                     cy={femaleY}
                     r={isUser ? (isMobile ? 6 : 7) : isMobile ? 4.5 : 5.5}
-                    fill={C.gold}
-                    stroke={isUser ? C.text : "none"}
+                    fill={colors.gold}
+                    stroke={isUser ? colors.text : "none"}
                     strokeWidth={isUser ? 1.5 : 0}
                   />
                 )}
@@ -205,7 +206,7 @@ export default function GenderGapChart({
                   <text
                     x={x + barWidth / 2 + 8}
                     y={maleY + 3}
-                    fill={C.blue}
+                    fill={colors.blue}
                     fontSize={isMobile ? 9 : 10}
                     fontWeight={600}
                     fontFamily="'DM Sans', sans-serif"
@@ -218,7 +219,7 @@ export default function GenderGapChart({
                   <text
                     x={x + barWidth / 2 + 8}
                     y={femaleY + 3}
-                    fill={C.gold}
+                    fill={colors.gold}
                     fontSize={isMobile ? 9 : 10}
                     fontWeight={600}
                     fontFamily="'DM Sans', sans-serif"
@@ -232,7 +233,7 @@ export default function GenderGapChart({
                     x={x + barWidth / 2}
                     y={Math.min(maleY ?? femaleY ?? top, femaleY ?? maleY ?? top) - 10}
                     textAnchor="middle"
-                    fill={row.gapPct < 0 ? C.green : C.red}
+                    fill={row.gapPct < 0 ? colors.green : colors.red}
                     fontSize={isMobile ? 9 : 10}
                     fontWeight={700}
                     fontFamily="'DM Sans', sans-serif"
@@ -245,7 +246,7 @@ export default function GenderGapChart({
                   x={x + barWidth / 2}
                   y={top + height + 18}
                   textAnchor="middle"
-                  fill={isUser ? C.gold : C.muted}
+                  fill={isUser ? colors.gold : colors.muted}
                   fontSize={isMobile ? 9 : 11}
                   fontWeight={isUser ? 700 : 400}
                   fontFamily="'DM Sans', sans-serif"
@@ -270,7 +271,7 @@ export default function GenderGapChart({
                     x={x + barWidth / 2}
                     y={top + height + 22 + labelLineCount * labelLineHeight}
                     textAnchor="middle"
-                    fill={C.gold}
+                    fill={colors.gold}
                     fontSize={isMobile ? 8 : 9}
                     fontWeight={600}
                     fontFamily="'DM Sans', sans-serif"
@@ -291,7 +292,7 @@ export default function GenderGapChart({
           gap: isMobile ? 10 : 16,
           flexWrap: "wrap",
           fontSize: isMobile ? 10 : 11,
-          color: C.muted,
+          color: colors.muted,
           marginBottom: 6,
           paddingLeft: 4,
         }}
@@ -302,7 +303,7 @@ export default function GenderGapChart({
               width: 9,
               height: 9,
               borderRadius: "50%",
-              background: C.blue,
+              background: colors.blue,
               display: "inline-block",
             }}
           />
@@ -314,7 +315,7 @@ export default function GenderGapChart({
               width: 9,
               height: 9,
               borderRadius: "50%",
-              background: C.gold,
+              background: colors.gold,
               display: "inline-block",
             }}
           />
@@ -325,7 +326,7 @@ export default function GenderGapChart({
             style={{
               width: 12,
               height: 0,
-              borderTop: `2px solid ${C.muted}`,
+              borderTop: `2px solid ${colors.muted}`,
               opacity: 0.45,
               display: "inline-block",
             }}
@@ -335,7 +336,7 @@ export default function GenderGapChart({
       </div>
 
       {isMobile && (
-        <p style={{ fontSize: 10, color: C.dim, textAlign: "center", margin: "4px 0 0" }}>
+        <p style={{ fontSize: 10, color: colors.dim, textAlign: "center", margin: "4px 0 0" }}>
           {getMobileChartHint({ chartScrollable, compactMobile, isGapMode: true })}
         </p>
       )}

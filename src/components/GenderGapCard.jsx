@@ -1,4 +1,4 @@
-import { C } from "../theme";
+import { useTheme } from "../theme";
 
 function describeGap(gapPct) {
   if (gapPct == null) return "The published data are too limited here to calculate a stable gap.";
@@ -16,16 +16,18 @@ export default function GenderGapCard({
   selectedLabel,
   workLabel,
 }) {
+  const { colors } = useTheme();
+
   if (!selectedBucket) {
     return (
       <div
         style={{
           marginTop: 20,
           padding: "18px 20px",
-          background: C.card,
+          background: colors.card,
           borderRadius: 12,
-          border: `1px solid ${C.border}`,
-          color: C.muted,
+          border: `1px solid ${colors.border}`,
+          color: colors.muted,
           fontSize: 14,
           textAlign: "center",
         }}
@@ -51,28 +53,28 @@ export default function GenderGapCard({
       style={{
         marginTop: 20,
         padding: isMobile ? "16px 16px" : "22px 26px",
-        background: C.card,
+        background: colors.card,
         borderRadius: 12,
-        border: `1px solid ${C.border}`,
+        border: `1px solid ${colors.border}`,
       }}
     >
       <div
         style={{
           fontFamily: "'Playfair Display', serif",
           fontSize: isMobile ? 16 : 18,
-          color: C.gold,
+          color: colors.gold,
           marginBottom: 10,
         }}
       >
         Official Gender Pay Gap
       </div>
 
-      <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: "#c5c0b6" }}>
-        In <strong style={{ color: C.text }}>{selectedLabel}</strong>{selectionContext ? ` ${selectionContext}` : ""}, the published ONS median hourly pay excluding overtime for
+      <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: colors.body }}>
+        In <strong style={{ color: colors.text }}>{selectedLabel}</strong>{selectionContext ? ` ${selectionContext}` : ""}, the published ONS median hourly pay excluding overtime for
         {" "}
-        <strong style={{ color: C.blue }}>men</strong> is <strong style={{ color: C.text }}>£{maleMedian?.toFixed(2) ?? "—"}</strong>
+        <strong style={{ color: colors.blue }}>men</strong> is <strong style={{ color: colors.text }}>\u00A3{maleMedian?.toFixed(2) ?? "\u2014"}</strong>
         {" "}
-        and for <strong style={{ color: C.gold }}>women</strong> is <strong style={{ color: C.text }}>£{femaleMedian?.toFixed(2) ?? "—"}</strong>
+        and for <strong style={{ color: colors.gold }}>women</strong> is <strong style={{ color: colors.text }}>\u00A3{femaleMedian?.toFixed(2) ?? "\u2014"}</strong>
         {" "}
         among {workLabel}. {describeGap(gapPct)} {comparison}
       </div>
@@ -81,7 +83,7 @@ export default function GenderGapCard({
         style={{
           marginTop: 14,
           padding: isMobile ? "10px 10px" : "14px 16px",
-          background: C.bg,
+          background: colors.bg,
           borderRadius: 8,
           display: "grid",
           gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, minmax(0, 1fr))",
@@ -90,17 +92,17 @@ export default function GenderGapCard({
         }}
       >
         {[
-          { label: "Men median", value: maleMedian != null ? `£${maleMedian.toFixed(2)}` : "—", color: C.blue },
-          { label: "Women median", value: femaleMedian != null ? `£${femaleMedian.toFixed(2)}` : "—", color: C.gold },
+          { label: "Men median", value: maleMedian != null ? `\u00A3${maleMedian.toFixed(2)}` : "\u2014", color: colors.blue },
+          { label: "Women median", value: femaleMedian != null ? `\u00A3${femaleMedian.toFixed(2)}` : "\u2014", color: colors.gold },
           {
             label: "Gap here",
-            value: gapPct != null ? `${gapPct > 0 ? gapPct : Math.abs(gapPct)}%${gapPct < 0 ? " women lead" : gapPct > 0 ? " men lead" : ""}` : "—",
-            color: gapPct == null ? C.muted : gapPct < 0 ? C.green : C.red,
+            value: gapPct != null ? `${gapPct > 0 ? gapPct : Math.abs(gapPct)}%${gapPct < 0 ? " women lead" : gapPct > 0 ? " men lead" : ""}` : "\u2014",
+            color: gapPct == null ? colors.muted : gapPct < 0 ? colors.green : colors.red,
           },
           {
             label: "UK benchmark",
-            value: benchmarkGap != null ? `${benchmarkGap}%` : "—",
-            color: C.text,
+            value: benchmarkGap != null ? `${benchmarkGap}%` : "\u2014",
+            color: colors.text,
           },
         ].map((item) => (
           <div
@@ -112,7 +114,7 @@ export default function GenderGapCard({
               border: `1px solid ${item.color}20`,
             }}
           >
-            <div style={{ color: C.muted, marginBottom: 4 }}>{item.label}</div>
+            <div style={{ color: colors.muted, marginBottom: 4 }}>{item.label}</div>
             <div style={{ color: item.color, fontWeight: 700 }}>{item.value}</div>
           </div>
         ))}

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { useCenterSelectedScroll } from "../hooks/useCenterSelectedScroll";
 import { PL, PV } from "../percentiles";
-import { C, dotColor } from "../theme";
+import { dotColor, useTheme } from "../theme";
 import { getAxisDensity, getAxisLabelLines, getMobileChartHint, getSelectedDisplayLabel } from "../utils/chartLabels";
 
 export default function EarningsChart({
@@ -23,6 +23,7 @@ export default function EarningsChart({
   selectedBucketId,
   setActiveIdx,
 }) {
+  const { colors, mode } = useTheme();
   const left = isMobile ? 44 : 64;
   const rightPad = isMobile ? 12 : 30;
   const usableWidth = Math.max(200, containerWidth - 8 - left - rightPad);
@@ -101,19 +102,19 @@ export default function EarningsChart({
             marginBottom: 8,
             padding: isMobile ? "6px 10px" : "7px 12px",
             borderRadius: 999,
-            border: `1px solid ${C.gold}33`,
-            background: `${C.gold}10`,
-            color: C.text,
+            border: `1px solid ${colors.gold}33`,
+            background: `${colors.gold}10`,
+            color: colors.text,
             fontSize: isMobile ? 11 : 12,
             maxWidth: "100%",
           }}
         >
-          <span style={{ color: C.gold, fontWeight: 700, whiteSpace: "nowrap" }}>Selected</span>
+          <span style={{ color: colors.gold, fontWeight: 700, whiteSpace: "nowrap" }}>Selected</span>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {getSelectedDisplayLabel(selectedRow, selectionType)}
           </span>
           {isMobile && selectedMedianLabel && (
-            <span style={{ color: C.text, fontWeight: 600, whiteSpace: "nowrap" }}>
+            <span style={{ color: colors.text, fontWeight: 600, whiteSpace: "nowrap" }}>
               {selectedMedianLabel}
             </span>
           )}
@@ -145,14 +146,14 @@ export default function EarningsChart({
                 x2={actualWidth - rightPad + 4}
                 y1={y(value)}
                 y2={y(value)}
-                stroke={C.faint}
+                stroke={colors.faint}
                 strokeWidth={0.7}
               />
               <text
                 x={left - 8}
                 y={y(value) + 4}
                 textAnchor="end"
-                fill={C.dim}
+                fill={colors.dim}
                 fontSize={fontSizes.gridLabel}
                 fontFamily="'DM Sans', sans-serif"
               >
@@ -171,7 +172,7 @@ export default function EarningsChart({
                   x2={actualWidth - rightPad + 4}
                   y1={salaryY}
                   y2={salaryY}
-                  stroke={C.red}
+                  stroke={colors.red}
                   strokeWidth={1.5}
                   strokeDasharray="7,4"
                   opacity={0.7}
@@ -180,13 +181,13 @@ export default function EarningsChart({
                   x={actualWidth - rightPad + 2}
                   y={salaryY - 6}
                   textAnchor="end"
-                  fill={C.red}
+                  fill={colors.red}
                   fontSize={fontSizes.salaryLabel}
                   fontWeight={600}
                   fontFamily="'DM Sans', sans-serif"
                 >
                   {isMobile ? fmt(salary) : `You: ${fmt(salary)}`}
-                  {clamped ? " ▲" : ""}
+                  {clamped ? " \u25B2" : ""}
                 </text>
               </>
             );
@@ -197,7 +198,7 @@ export default function EarningsChart({
             const rowId = row.id ?? row.label;
             const isUser = rowId === selectedBucketId;
             const isActive = activeIdx === index;
-            const accent = isUser ? C.gold : C.blue;
+            const accent = isUser ? colors.gold : colors.blue;
             const points = availableKeys
               .map((key) => ({ key, val: row[key], lbl: PL[key], p: PV[key] }))
               .filter((point) => point.val != null);
@@ -219,8 +220,8 @@ export default function EarningsChart({
                     width={barWidth + 6}
                     height={height + 6}
                     rx={5}
-                    fill={`${C.gold}08`}
-                    stroke={`${C.gold}20`}
+                    fill={`${colors.gold}08`}
+                    stroke={`${colors.gold}20`}
                     strokeWidth={1}
                   />
                 )}
@@ -270,7 +271,7 @@ export default function EarningsChart({
                         cx={x + barWidth / 2}
                         cy={cy}
                         r={radius}
-                        fill={isMedian ? "#f5f0e8" : dotColor(point.key)}
+                        fill={isMedian ? colors.medianDot : dotColor(point.key, mode)}
                         stroke={isMedian ? accent : "none"}
                         strokeWidth={isMedian ? 2 : 0}
                         opacity={isMedian ? 0.95 : 0.75}
@@ -279,7 +280,7 @@ export default function EarningsChart({
                         <text
                           x={x + barWidth / 2 + radius + 3}
                           y={cy + 3}
-                          fill={isMedian ? "#f5f0e8" : C.muted}
+                          fill={isMedian ? colors.medianDot : colors.muted}
                           fontSize={isMedian ? fontSizes.medianLabel : fontSizes.pctLabel}
                           fontWeight={isMedian ? 700 : 400}
                           fontFamily="'DM Sans', sans-serif"
@@ -290,7 +291,7 @@ export default function EarningsChart({
                         <text
                           x={x + barWidth / 2 + radius + 3}
                           y={cy + 3}
-                          fill="#f5f0e8"
+                          fill={colors.medianDot}
                           fontSize={fontSizes.medianLabel}
                           fontWeight={700}
                           fontFamily="'DM Sans', sans-serif"
@@ -300,10 +301,10 @@ export default function EarningsChart({
                             ? isHours
                               ? `${point.val.toFixed(0)}h`
                               : isHourly
-                                ? `£${point.val.toFixed(0)}`
+                                ? `\u00A3${point.val.toFixed(0)}`
                                 : isWeekly
-                                  ? `£${Math.round(point.val)}`
-                                  : `£${(point.val / 1000).toFixed(0)}k`
+                                  ? `\u00A3${Math.round(point.val)}`
+                                  : `\u00A3${(point.val / 1000).toFixed(0)}k`
                             : fmt(point.val)}
                         </text>
                       ) : null}
@@ -315,8 +316,8 @@ export default function EarningsChart({
                   const dotY = Math.max(top + 4, y(salary));
                   return (
                     <>
-                      <circle cx={x + barWidth / 2} cy={dotY} r={isMobile ? 6 : 8} fill={C.red} stroke={C.bg} strokeWidth={2.5} />
-                      <circle cx={x + barWidth / 2} cy={dotY} r={isMobile ? 10 : 13} fill="none" stroke={C.red} strokeWidth={1.5} opacity={0.25}>
+                      <circle cx={x + barWidth / 2} cy={dotY} r={isMobile ? 6 : 8} fill={colors.red} stroke={colors.bg} strokeWidth={2.5} />
+                      <circle cx={x + barWidth / 2} cy={dotY} r={isMobile ? 10 : 13} fill="none" stroke={colors.red} strokeWidth={1.5} opacity={0.25}>
                         <animate attributeName="r" from={isMobile ? "8" : "10"} to={isMobile ? "13" : "16"} dur="2s" repeatCount="indefinite" />
                         <animate attributeName="opacity" from="0.35" to="0" dur="2s" repeatCount="indefinite" />
                       </circle>
@@ -328,7 +329,7 @@ export default function EarningsChart({
                   x={x + barWidth / 2}
                   y={top + height + 18}
                   textAnchor="middle"
-                  fill={isUser ? C.gold : C.muted}
+                  fill={isUser ? colors.gold : colors.muted}
                   fontSize={fontSizes.axisLabel}
                   fontWeight={isUser ? 700 : 400}
                   fontFamily="'DM Sans', sans-serif"
@@ -353,7 +354,7 @@ export default function EarningsChart({
                     x={x + barWidth / 2}
                     y={top + height + 22 + labelLineCount * labelLineHeight}
                     textAnchor="middle"
-                    fill={C.gold}
+                    fill={colors.gold}
                     fontSize={fontSizes.youLabel}
                     fontWeight={600}
                     fontFamily="'DM Sans', sans-serif"
@@ -374,7 +375,7 @@ export default function EarningsChart({
           gap: isMobile ? 10 : 16,
           flexWrap: "wrap",
           fontSize: isMobile ? 10 : 11,
-          color: C.muted,
+          color: colors.muted,
           marginBottom: 6,
           paddingLeft: 4,
         }}
@@ -385,8 +386,8 @@ export default function EarningsChart({
               width: 9,
               height: 9,
               borderRadius: "50%",
-              background: "#f5f0e8",
-              border: `2px solid ${C.blue}`,
+              background: colors.medianDot,
+              border: `2px solid ${colors.blue}`,
               display: "inline-block",
             }}
           />{" "}
@@ -398,7 +399,7 @@ export default function EarningsChart({
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: C.blue,
+              background: colors.blue,
               opacity: 0.75,
               display: "inline-block",
             }}
@@ -411,7 +412,7 @@ export default function EarningsChart({
               width: 10,
               height: 7,
               borderRadius: 2,
-              background: C.blue,
+              background: colors.blue,
               opacity: 0.12,
               display: "inline-block",
             }}
@@ -420,13 +421,13 @@ export default function EarningsChart({
         </span>
         {salary && (
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 0, borderTop: `2px dashed ${C.red}`, display: "inline-block" }} /> {isHours ? "Your hours" : "Your pay"}
+            <span style={{ width: 10, height: 0, borderTop: `2px dashed ${colors.red}`, display: "inline-block" }} /> {isHours ? "Your hours" : "Your pay"}
           </span>
         )}
       </div>
 
       {isMobile && (
-        <p style={{ fontSize: 10, color: C.dim, textAlign: "center", margin: "4px 0 0" }}>
+        <p style={{ fontSize: 10, color: colors.dim, textAlign: "center", margin: "4px 0 0" }}>
           {getMobileChartHint({ chartScrollable, compactMobile, isGapMode: false })}
         </p>
       )}

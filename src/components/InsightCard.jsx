@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { PL, PV } from "../percentiles";
-import { C } from "../theme";
+import { useTheme } from "../theme";
 import { calcNetPay, TAKE_HOME_DEFAULTS } from "../utils/earnings";
 import CompBar from "./CompBar";
 
@@ -28,6 +28,7 @@ export default function InsightCard({
   selectionType,
   fmt,
 }) {
+  const { colors } = useTheme();
   const [taxRegion, setTaxRegion] = useState(TAKE_HOME_DEFAULTS.taxRegion);
   const [pensionPct, setPensionPct] = useState(String(TAKE_HOME_DEFAULTS.pensionPct));
   const [studentLoanPlan, setStudentLoanPlan] = useState(TAKE_HOME_DEFAULTS.studentLoanPlan);
@@ -39,10 +40,10 @@ export default function InsightCard({
         style={{
           marginTop: 20,
           padding: "18px 20px",
-          background: C.card,
+          background: colors.card,
           borderRadius: 12,
-          border: `1px solid ${C.border}`,
-          color: C.muted,
+          border: `1px solid ${colors.border}`,
+          color: colors.muted,
           fontSize: 14,
           textAlign: "center",
         }}
@@ -82,50 +83,50 @@ export default function InsightCard({
       style={{
         marginTop: 20,
         padding: isMobile ? "16px 16px" : "22px 26px",
-        background: C.card,
+        background: colors.card,
         borderRadius: 12,
-        border: `1px solid ${C.border}`,
+        border: `1px solid ${colors.border}`,
       }}
     >
       <div
         style={{
           fontFamily: "'Playfair Display', serif",
           fontSize: isMobile ? 16 : 18,
-          color: C.gold,
+          color: colors.gold,
           marginBottom: 10,
         }}
       >
         Where you stand
       </div>
-      <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: "#c5c0b6" }}>
+      <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: colors.body }}>
         <>
           {isAgeView ? (
             <>
-              At <strong style={{ color: C.red }}>{fmt(salary)}{periodUnit}</strong> aged <strong style={{ color: C.gold }}>{age}</strong>, you fall in the{" "}
-              <strong style={{ color: C.text }}>{selectedLabel}</strong> age group. The median {periodLabel}
-              {isHours ? "" : " gross pay"} for {cohortDesc} in this group is <strong style={{ color: C.text }}>{fmt(median)}</strong>.
+              At <strong style={{ color: colors.red }}>{fmt(salary)}{periodUnit}</strong> aged <strong style={{ color: colors.gold }}>{age}</strong>, you fall in the{" "}
+              <strong style={{ color: colors.text }}>{selectedLabel}</strong> age group. The median {periodLabel}
+              {isHours ? "" : " gross pay"} for {cohortDesc} in this group is <strong style={{ color: colors.text }}>{fmt(median)}</strong>.
             </>
           ) : (
             <>
-              At <strong style={{ color: C.red }}>{fmt(salary)}{periodUnit}</strong> in <strong style={{ color: C.text }}>{selectedLabel}</strong>, the median {periodLabel}
-              {isHours ? "" : " gross pay"} for {cohortDesc}{selectionContext ? ` ${selectionContext}` : ""} is <strong style={{ color: C.text }}>{fmt(median)}</strong>.
+              At <strong style={{ color: colors.red }}>{fmt(salary)}{periodUnit}</strong> in <strong style={{ color: colors.text }}>{selectedLabel}</strong>, the median {periodLabel}
+              {isHours ? "" : " gross pay"} for {cohortDesc}{selectionContext ? ` ${selectionContext}` : ""} is <strong style={{ color: colors.text }}>{fmt(median)}</strong>.
             </>
           )}
           {diff > 0 ? (
             <>
               {" "}
               You're {isHours ? "working" : "earning"}{" "}
-              <strong style={{ color: isHours ? C.red : C.green }}>
+              <strong style={{ color: isHours ? colors.red : colors.green }}>
                 {fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "more than" : "above"}
               </strong>{" "}
               the median.
-              {isHours && pctDiff > 15 ? " That’s significantly more hours than most." : ""}
+              {isHours && pctDiff > 15 ? " That's significantly more hours than most." : ""}
             </>
           ) : diff < 0 ? (
             <>
               {" "}
               You're {isHours ? "working" : "earning"}{" "}
-              <strong style={{ color: isHours ? C.green : C.red }}>
+              <strong style={{ color: isHours ? colors.green : colors.red }}>
                 {fmt(Math.abs(diff))} ({pctDiff}%) {isHours ? "fewer than" : "below"}
               </strong>{" "}
               the median.
@@ -140,19 +141,19 @@ export default function InsightCard({
             (pctResult.below ? (
               <>
                 {" "}
-                That places you <strong style={{ color: C.gold }}>below the {pctResult.value}th percentile</strong> {isHours ? "working fewer hours than roughly" : "earning less than roughly"}{" "}
+                That places you <strong style={{ color: colors.gold }}>below the {pctResult.value}th percentile</strong> {isHours ? "working fewer hours than roughly" : "earning less than roughly"}{" "}
                 {100 - pctResult.value}% of {cohortDesc} {percentileContext}
               </>
             ) : pctResult.above ? (
               <>
                 {" "}
-                That places you <strong style={{ color: C.gold }}>above the {pctResult.value}th percentile</strong> {isHours ? "working more hours than at least" : "earning more than at least"}{" "}
+                That places you <strong style={{ color: colors.gold }}>above the {pctResult.value}th percentile</strong> {isHours ? "working more hours than at least" : "earning more than at least"}{" "}
                 {pctResult.value}% of {cohortDesc} {percentileContext}
               </>
             ) : (
               <>
                 {" "}
-                That puts you at roughly the <strong style={{ color: C.gold }}>{pctResult.value}th percentile</strong> {isHours ? "working more hours than about" : "earning more than about"}{" "}
+                That puts you at roughly the <strong style={{ color: colors.gold }}>{pctResult.value}th percentile</strong> {isHours ? "working more hours than about" : "earning more than about"}{" "}
                 {pctResult.value}% of {cohortDesc} {percentileContext}
               </>
             ))}
@@ -163,7 +164,7 @@ export default function InsightCard({
         style={{
           marginTop: 14,
           padding: isMobile ? "10px 10px" : "14px 16px",
-          background: C.bg,
+          background: colors.bg,
           borderRadius: 8,
           display: "grid",
           gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(110px, 1fr))",
@@ -186,13 +187,13 @@ export default function InsightCard({
                 justifyContent: "space-between",
                 padding: "4px 6px",
                 borderRadius: 4,
-                background: isNearest ? `${C.gold}15` : "transparent",
+                background: isNearest ? `${colors.gold}15` : "transparent",
               }}
             >
-              <span style={{ color: C.muted }}>{PL[key]}</span>
+              <span style={{ color: colors.muted }}>{PL[key]}</span>
               <span
                 style={{
-                  color: isNearest ? C.gold : isAbove ? `${C.green}bb` : C.muted,
+                  color: isNearest ? colors.gold : isAbove ? `${colors.green}bb` : colors.muted,
                   fontWeight: isNearest ? 600 : 400,
                   fontVariantNumeric: "tabular-nums",
                 }}
@@ -209,14 +210,14 @@ export default function InsightCard({
           <div
             style={{
               fontSize: isMobile ? 12 : 13,
-              color: C.muted,
+              color: colors.muted,
               marginBottom: 10,
               fontWeight: 500,
             }}
           >
             Average weekly pay breakdown · {selectedLabel} age group
           </div>
-          <CompBar data={compData} isMobile={isMobile} colors={C} />
+          <CompBar data={compData} isMobile={isMobile} />
         </div>
       )}
 
@@ -225,7 +226,7 @@ export default function InsightCard({
           <div
             style={{
               fontSize: isMobile ? 12 : 13,
-              color: C.muted,
+              color: colors.muted,
               marginBottom: 10,
               fontWeight: 500,
             }}
@@ -241,7 +242,7 @@ export default function InsightCard({
             }}
           >
             <div>
-              <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4 }}>Tax region</label>
+              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Tax region</label>
               <select
                 value={taxRegion}
                 onChange={(event) => setTaxRegion(event.target.value)}
@@ -249,9 +250,9 @@ export default function InsightCard({
                   width: "100%",
                   padding: "9px 10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.bg,
-                  color: C.text,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.bg,
+                  color: colors.text,
                   fontSize: 13,
                   fontFamily: "inherit",
                   outline: "none",
@@ -264,7 +265,7 @@ export default function InsightCard({
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4 }}>Pension %</label>
+              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Pension %</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -274,9 +275,9 @@ export default function InsightCard({
                   width: "100%",
                   padding: "9px 10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.bg,
-                  color: C.text,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.bg,
+                  color: colors.text,
                   fontSize: 13,
                   fontFamily: "inherit",
                   outline: "none",
@@ -285,7 +286,7 @@ export default function InsightCard({
               />
             </div>
             <div>
-              <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4 }}>Student loan</label>
+              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Student loan</label>
               <select
                 value={studentLoanPlan}
                 onChange={(event) => setStudentLoanPlan(event.target.value)}
@@ -293,9 +294,9 @@ export default function InsightCard({
                   width: "100%",
                   padding: "9px 10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.bg,
-                  color: C.text,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.bg,
+                  color: colors.text,
                   fontSize: 13,
                   fontFamily: "inherit",
                   outline: "none",
@@ -310,7 +311,7 @@ export default function InsightCard({
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4 }}>Postgrad loan</label>
+              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Postgrad loan</label>
               <button
                 type="button"
                 onClick={() => setHasPostgraduateLoan((current) => !current)}
@@ -318,9 +319,9 @@ export default function InsightCard({
                   width: "100%",
                   padding: "9px 10px",
                   borderRadius: 6,
-                  border: `1px solid ${hasPostgraduateLoan ? C.gold : C.faint}`,
-                  background: hasPostgraduateLoan ? `${C.gold}15` : C.bg,
-                  color: hasPostgraduateLoan ? C.gold : C.muted,
+                  border: `1px solid ${hasPostgraduateLoan ? colors.gold : colors.faint}`,
+                  background: hasPostgraduateLoan ? `${colors.gold}15` : colors.bg,
+                  color: hasPostgraduateLoan ? colors.gold : colors.muted,
                   fontSize: 13,
                   fontFamily: "inherit",
                   outline: "none",
@@ -338,7 +339,7 @@ export default function InsightCard({
               height: isMobile ? 20 : 24,
               borderRadius: 6,
               overflow: "hidden",
-              background: C.faint,
+              background: colors.faint,
               marginBottom: 8,
             }}
           >
@@ -349,7 +350,7 @@ export default function InsightCard({
                   width: `${((part.value / totalTakeHome) * 100).toFixed(1)}%`,
                   background: part.color,
                   opacity: 0.75,
-                  borderRight: index < parts.length - 1 ? `1px solid ${C.bg}` : "none",
+                  borderRight: index < parts.length - 1 ? `1px solid ${colors.bg}` : "none",
                 }}
               />
             ))}
@@ -360,7 +361,7 @@ export default function InsightCard({
               gap: isMobile ? 6 : 14,
               flexWrap: "wrap",
               fontSize: isMobile ? 11 : 12,
-              color: C.muted,
+              color: colors.muted,
             }}
           >
             {takeHomeParts.map((part) => (
@@ -375,8 +376,8 @@ export default function InsightCard({
                     display: "inline-block",
                   }}
                 />
-                {part.label}: <strong style={{ color: C.text }}>£{part.value.toLocaleString("en-GB")}</strong>
-                <span style={{ color: C.dim }}>
+                {part.label}: <strong style={{ color: colors.text }}>\u00A3{part.value.toLocaleString("en-GB")}</strong>
+                <span style={{ color: colors.dim }}>
                   ({Math.round((part.value / totalTakeHome) * 100)}%)
                 </span>
               </span>
@@ -386,22 +387,22 @@ export default function InsightCard({
             style={{
               marginTop: 10,
               paddingTop: 8,
-              borderTop: `1px solid ${C.faint}`,
+              borderTop: `1px solid ${colors.faint}`,
               display: "flex",
               gap: isMobile ? 10 : 20,
               flexWrap: "wrap",
               fontSize: isMobile ? 11 : 12,
-              color: C.muted,
+              color: colors.muted,
             }}
           >
             <span>
-              Monthly: <strong style={{ color: "#4ecb71" }}>£{Math.round(taxProfile.net / 12).toLocaleString("en-GB")}</strong>
+              Monthly: <strong style={{ color: "#4ecb71" }}>\u00A3{Math.round(taxProfile.net / 12).toLocaleString("en-GB")}</strong>
             </span>
             <span>
-              Weekly: <strong style={{ color: "#4ecb71" }}>£{Math.round(taxProfile.net / 52).toLocaleString("en-GB")}</strong>
+              Weekly: <strong style={{ color: "#4ecb71" }}>\u00A3{Math.round(taxProfile.net / 52).toLocaleString("en-GB")}</strong>
             </span>
             <span>
-              Effective rate: <strong style={{ color: C.text }}>{taxProfile.effectiveRate}%</strong>
+              Effective rate: <strong style={{ color: colors.text }}>{taxProfile.effectiveRate}%</strong>
             </span>
           </div>
           {(isHourly || isWeekly) && (
@@ -409,16 +410,16 @@ export default function InsightCard({
               style={{
                 marginTop: 6,
                 fontSize: isMobile ? 10 : 11,
-                color: C.dim,
+                color: colors.dim,
                 fontStyle: "italic",
               }}
             >
               {isHourly
-                ? `Based on ${parseFloat(hoursPay) || 37.5}hrs/wk × 52 weeks = £${annualGross.toLocaleString("en-GB")} annual gross`
-                : `Based on £${salary.toLocaleString("en-GB")}/wk × 52 = £${annualGross.toLocaleString("en-GB")} annual gross`}
+                ? `Based on ${parseFloat(hoursPay) || 37.5}hrs/wk \u00D7 52 weeks = \u00A3${annualGross.toLocaleString("en-GB")} annual gross`
+                : `Based on \u00A3${salary.toLocaleString("en-GB")}/wk \u00D7 52 = \u00A3${annualGross.toLocaleString("en-GB")} annual gross`}
             </div>
           )}
-          <div style={{ marginTop: 6, fontSize: isMobile ? 9 : 10, color: C.dim }}>
+          <div style={{ marginTop: 6, fontSize: isMobile ? 9 : 10, color: colors.dim }}>
             Estimate only. Uses 2025/26 payroll-style bands, standard tax code 1257L, net-pay pension treatment, and annual student-loan thresholds.
           </div>
         </div>

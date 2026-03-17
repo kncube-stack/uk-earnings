@@ -23,7 +23,7 @@ import { REGION_DATA, REGION_OPTIONS } from "./data/asheRegion";
 import { SECTOR_DATA, SECTOR_OPTIONS } from "./data/asheSector";
 import { useContainerWidth } from "./hooks/useContainerWidth";
 import { PK } from "./percentiles";
-import { C } from "./theme";
+import { dark, light, ThemeContext } from "./theme";
 import { estimatePercentile, findGroup } from "./utils/earnings";
 
 // ─── ASHE 2025 Data ───
@@ -293,8 +293,20 @@ export default function EarningsDashboard() {
   const [hourlyPay, setHourlyPay] = useState("");
   const [hoursPay, setHoursPay] = useState("");
   const [activeIdx, setActiveIdx] = useState(null);
+  const [themeMode, setThemeMode] = useState(() => {
+    try { return localStorage.getItem("theme") || "dark"; } catch { return "dark"; }
+  });
+  const colors = themeMode === "light" ? light : dark;
   const containerRef = useRef(null);
   const cw = useContainerWidth(containerRef);
+
+  const toggleTheme = useCallback(() => {
+    setThemeMode((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try { localStorage.setItem("theme", next); } catch {}
+      return next;
+    });
+  }, []);
 
   const isMobile = cw < 520;
   const isTablet = cw >= 520 && cw < 768;
@@ -665,30 +677,54 @@ export default function EarningsDashboard() {
       : !!sourceData[effectivePeriod][earningsDataKey];
 
   return (
+    <ThemeContext.Provider value={{ colors, mode: themeMode }}>
     <div
       style={{
-        background: C.bg,
+        background: colors.bg,
         minHeight: "100vh",
         padding: isMobile ? "20px 10px" : "32px 20px",
         fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        color: C.text,
+        color: colors.text,
       }}
     >
       <div ref={containerRef} style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: isMobile ? 20 : 26,
-            fontWeight: 600,
-            color: "#f5f0e8",
-            margin: "0 0 4px",
-          }}
-        >
-          UK Earnings Explorer
-        </h1>
-        <p style={{ color: C.muted, fontSize: isMobile ? 11 : 13, margin: "0 0 20px" }}>
-          ASHE 2025 Provisional · Office for National Statistics
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: isMobile ? 20 : 26,
+                fontWeight: 600,
+                color: colors.text,
+                margin: "0 0 4px",
+              }}
+            >
+              UK Earnings Explorer
+            </h1>
+            <p style={{ color: colors.muted, fontSize: isMobile ? 11 : 13, margin: "0 0 20px" }}>
+              ASHE 2025 Provisional · Office for National Statistics
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle light/dark mode"
+            style={{
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: `1px solid ${colors.faint}`,
+              background: colors.card,
+              color: colors.muted,
+              fontSize: 16,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              lineHeight: 1,
+              flexShrink: 0,
+              marginTop: 2,
+            }}
+          >
+            {themeMode === "dark" ? "\u2600\uFE0F" : "\uD83C\uDF19"}
+          </button>
+        </div>
 
         <div
           style={{
@@ -700,7 +736,7 @@ export default function EarningsDashboard() {
           }}
         >
           <div>
-            <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Pay period</label>
+            <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Pay period</label>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               <Pill active={!isGapMode && period === "annual"} disabled={isGapMode} onClick={() => setPeriod("annual")} isMobile={isMobile}>Annual</Pill>
               <Pill active={!isGapMode && period === "weekly"} disabled={isGapMode} onClick={() => setPeriod("weekly")} isMobile={isMobile}>Weekly</Pill>
@@ -709,7 +745,7 @@ export default function EarningsDashboard() {
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Gender</label>
+            <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Gender</label>
             <div style={{ display: "flex", gap: 4 }}>
               <Pill active={effectiveGender === "all"} disabled={isGapMode} onClick={() => setGender("all")} isMobile={isMobile}>All</Pill>
               <Pill active={!isGapMode && gender === "male"} disabled={isGapMode} onClick={() => setGender("male")} isMobile={isMobile}>Male</Pill>
@@ -717,7 +753,7 @@ export default function EarningsDashboard() {
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Work pattern</label>
+            <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Work pattern</label>
             <div style={{ display: "flex", gap: 4 }}>
               <Pill active={work === "all"} onClick={() => setWork("all")} isMobile={isMobile}>All</Pill>
               <Pill active={work === "ft"} onClick={() => setWork("ft")} isMobile={isMobile}>Full-Time</Pill>
@@ -726,7 +762,7 @@ export default function EarningsDashboard() {
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Analysis</label>
+          <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Analysis</label>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             <Pill active={analysisMode === "earnings"} onClick={() => setAnalysisMode("earnings")} isMobile={isMobile}>Earnings</Pill>
             <Pill active={analysisMode === "gap"} onClick={() => setAnalysisMode("gap")} isMobile={isMobile}>Gender pay gap</Pill>
@@ -734,7 +770,7 @@ export default function EarningsDashboard() {
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 10, color: C.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>View</label>
+          <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>View</label>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             <Pill active={view === "age"} onClick={() => setView("age")} isMobile={isMobile}>Age</Pill>
             <Pill active={view === "occupation"} onClick={() => setView("occupation")} isMobile={isMobile}>Occupation</Pill>
@@ -755,7 +791,7 @@ export default function EarningsDashboard() {
         >
           {isAgeView ? (
             <div style={{ width: isMobile ? "35%" : 60, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Your age</label>
+              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Your age</label>
               <input
                 type="number"
                 min="16"
@@ -766,9 +802,9 @@ export default function EarningsDashboard() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.card,
-                  color: C.text,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.card,
+                  color: colors.text,
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
@@ -778,7 +814,7 @@ export default function EarningsDashboard() {
             </div>
           ) : (
             <div style={{ width: isMobile ? "100%" : isOccupationView ? 320 : 260, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>{viewConfig.selectorLabel}</label>
+              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>{viewConfig.selectorLabel}</label>
               <select
                 value={viewConfig.selectorValue}
                 onChange={(e) => viewConfig.setSelectorValue(e.target.value)}
@@ -786,9 +822,9 @@ export default function EarningsDashboard() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.card,
-                  color: viewConfig.selectorValue ? C.text : C.muted,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.card,
+                  color: viewConfig.selectorValue ? colors.text : colors.muted,
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
@@ -808,7 +844,7 @@ export default function EarningsDashboard() {
 
           {isOccupationView && (
             <div style={{ width: isMobile ? "calc(58% - 5px)" : 170, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Region</label>
+              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Region</label>
               <select
                 value={selectedOccupationRegion}
                 onChange={(e) => {
@@ -823,9 +859,9 @@ export default function EarningsDashboard() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.card,
-                  color: selectedOccupationRegion ? C.text : C.muted,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.card,
+                  color: selectedOccupationRegion ? colors.text : colors.muted,
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
@@ -845,7 +881,7 @@ export default function EarningsDashboard() {
 
           {isOccupationView && (
             <div style={{ width: isMobile ? "calc(42% - 5px)" : 126, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Age band</label>
+              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Age band</label>
               <select
                 value={selectedOccupationAgeBand}
                 onChange={(e) => {
@@ -861,9 +897,9 @@ export default function EarningsDashboard() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.card,
-                  color: selectedOccupationAgeBand ? C.text : C.muted,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.card,
+                  color: selectedOccupationAgeBand ? colors.text : colors.muted,
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
@@ -884,7 +920,7 @@ export default function EarningsDashboard() {
 
           {isOccupationView && selectedOccupation && (
             <div style={{ width: isMobile ? "100%" : 320, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Job detail</label>
+              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Job detail</label>
               <select
                 value={selectedOccupationDetail}
                 onChange={(e) => setSelectedOccupationDetail(e.target.value)}
@@ -893,9 +929,9 @@ export default function EarningsDashboard() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.card,
-                  color: selectedOccupationDetail ? C.text : C.muted,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.card,
+                  color: selectedOccupationDetail ? colors.text : colors.muted,
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
@@ -926,7 +962,7 @@ export default function EarningsDashboard() {
 
           {!isGapMode && (
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>
                 {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
               </label>
               <input
@@ -938,9 +974,9 @@ export default function EarningsDashboard() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: 6,
-                  border: `1px solid ${C.faint}`,
-                  background: C.card,
-                  color: C.text,
+                  border: `1px solid ${colors.faint}`,
+                  background: colors.card,
+                  color: colors.text,
                   fontSize: 15,
                   fontFamily: "inherit",
                   outline: "none",
@@ -957,9 +993,9 @@ export default function EarningsDashboard() {
               padding: "10px 16px",
               marginBottom: 12,
               borderRadius: 8,
-              background: `${C.red}15`,
-              border: `1px solid ${C.red}30`,
-              color: C.muted,
+              background: `${colors.red}15`,
+              border: `1px solid ${colors.red}30`,
+              color: colors.muted,
               fontSize: 12,
             }}
           >
@@ -1037,7 +1073,7 @@ export default function EarningsDashboard() {
           </>
         )}
 
-        <p style={{ fontSize: isMobile ? 9 : 10, color: "#3a3830", marginTop: 16, lineHeight: 1.5 }}>
+        <p style={{ fontSize: isMobile ? 9 : 10, color: colors.source, marginTop: 16, lineHeight: 1.5 }}>
           Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional. Employees on adult rates in same job for &gt;1 year.
           {isGapMode
             ? ` Gender pay gap mode uses the official ONS formula based on hourly pay excluding overtime.${work === "ft" ? " The current UK full-time benchmark is 6.9%." : " The current UK all-employee benchmark is 12.8%."}`
@@ -1047,5 +1083,6 @@ export default function EarningsDashboard() {
         </p>
       </div>
     </div>
+    </ThemeContext.Provider>
   );
 }
