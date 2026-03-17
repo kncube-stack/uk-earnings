@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EarningsChart from "./components/EarningsChart";
 import GenderGapCard from "./components/GenderGapCard";
 import GenderGapChart from "./components/GenderGapChart";
+import HouseholdCard from "./components/HouseholdCard";
 import InsightCard from "./components/InsightCard";
 import Pill from "./components/Pill";
 import { INDUSTRY_DATA, INDUSTRY_OPTIONS } from "./data/asheIndustry";
@@ -312,6 +313,7 @@ export default function EarningsDashboard() {
   const isTablet = cw >= 520 && cw < 768;
   const isDesktop = cw >= 768;
   const isGapMode = analysisMode === "gap";
+  const isHouseholdMode = analysisMode === "household";
   const isAgeView = view === "age";
   const isOccupationView = view === "occupation";
   const isIndustryView = view === "industry";
@@ -766,9 +768,11 @@ export default function EarningsDashboard() {
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             <Pill active={analysisMode === "earnings"} onClick={() => setAnalysisMode("earnings")} isMobile={isMobile}>Earnings</Pill>
             <Pill active={analysisMode === "gap"} onClick={() => setAnalysisMode("gap")} isMobile={isMobile}>Gender pay gap</Pill>
+            <Pill active={analysisMode === "household"} onClick={() => setAnalysisMode("household")} isMobile={isMobile}>Household</Pill>
           </div>
         </div>
 
+        {!isHouseholdMode && (
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>View</label>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -779,8 +783,9 @@ export default function EarningsDashboard() {
             <Pill active={view === "sector"} onClick={() => setView("sector")} isMobile={isMobile}>Sector</Pill>
           </div>
         </div>
+        )}
 
-        <div
+        {!isHouseholdMode && <div
           style={{
             display: "flex",
             gap: 10,
@@ -985,9 +990,9 @@ export default function EarningsDashboard() {
               />
             </div>
           )}
-        </div>
+        </div>}
 
-        {!comboAvailable && (
+        {!isHouseholdMode && !comboAvailable && (
           <div
             style={{
               padding: "10px 16px",
@@ -1003,7 +1008,9 @@ export default function EarningsDashboard() {
           </div>
         )}
 
-        {isGapMode ? (
+        {isHouseholdMode ? (
+          <HouseholdCard isMobile={isMobile} isTablet={isTablet} />
+        ) : isGapMode ? (
           <>
             <GenderGapChart
               activeIdx={activeIdx}
@@ -1073,14 +1080,20 @@ export default function EarningsDashboard() {
           </>
         )}
 
-        <p style={{ fontSize: isMobile ? 9 : 10, color: colors.source, marginTop: 16, lineHeight: 1.5 }}>
-          Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional. Employees on adult rates in same job for &gt;1 year.
-          {isGapMode
-            ? ` Gender pay gap mode uses the official ONS formula based on hourly pay excluding overtime.${work === "ft" ? " The current UK full-time benchmark is 6.9%." : " The current UK all-employee benchmark is 12.8%."}`
-            : `${isOccupationView ? ` Occupation view uses SOC20 major groups${usesOccupationRegion ? " with Table 3 region refinement" : usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.` : ""}${isIndustryView ? " Industry view uses SIC2007 section groupings." : ""}${isRegionView ? " Region view uses workplace regions." : ""}${isSectorView ? " Sector view uses public, private, and non-profit groupings." : ""}`}
-          {!isGapMode && usesOccupationDetail && " The x-axis uses 4-digit SOC codes to keep detailed charts readable."}
-          {isDesktop && ` Hover ${isGapMode ? "categories" : "columns"} for detail.`}
-        </p>
+        {isHouseholdMode ? (
+          <p style={{ fontSize: isMobile ? 9 : 10, color: colors.source, marginTop: 16, lineHeight: 1.5 }}>
+            Sources: DWP Households Below Average Income (HBAI) FYE 2024 for income distribution. HMRC 2025/26 tax bands and thresholds. Child Benefit rates from GOV.UK. Modified OECD equivalisation scale for household size adjustment.
+          </p>
+        ) : (
+          <p style={{ fontSize: isMobile ? 9 : 10, color: colors.source, marginTop: 16, lineHeight: 1.5 }}>
+            Source: ONS Annual Survey of Hours and Earnings (ASHE) 2025 Provisional. Employees on adult rates in same job for &gt;1 year.
+            {isGapMode
+              ? ` Gender pay gap mode uses the official ONS formula based on hourly pay excluding overtime.${work === "ft" ? " The current UK full-time benchmark is 6.9%." : " The current UK all-employee benchmark is 12.8%."}`
+              : `${isOccupationView ? ` Occupation view uses SOC20 major groups${usesOccupationRegion ? " with Table 3 region refinement" : usesOccupationAgeBand ? " with Table 20 age-band refinement" : usesOccupationDetail ? " with Table 14 four-digit job detail" : ""}.` : ""}${isIndustryView ? " Industry view uses SIC2007 section groupings." : ""}${isRegionView ? " Region view uses workplace regions." : ""}${isSectorView ? " Sector view uses public, private, and non-profit groupings." : ""}`}
+            {!isGapMode && usesOccupationDetail && " The x-axis uses 4-digit SOC codes to keep detailed charts readable."}
+            {isDesktop && ` Hover ${isGapMode ? "categories" : "columns"} for detail.`}
+          </p>
+        )}
       </div>
     </div>
     </ThemeContext.Provider>
