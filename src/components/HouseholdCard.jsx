@@ -1,19 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { BHC_MEDIAN } from "../data/hbaiPercentiles";
 import { useTheme } from "../theme";
 import { TAKE_HOME_DEFAULTS } from "../utils/earnings";
 import { calcHousehold } from "../utils/household";
-
-const STORAGE_KEY = "household_v1";
-
-function loadSaved() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return null;
-}
 
 function Stepper({ label, value, onChange, min = 0, max = 10, colors, isMobile }) {
   return (
@@ -324,25 +314,15 @@ const defaultOptions = () => ({
 
 export default function HouseholdCard({ isMobile, isTablet }) {
   const { colors } = useTheme();
-  const saved = useMemo(loadSaved, []);
 
-  const [p1Gross, setP1Gross] = useState(saved?.p1Gross ?? "");
-  const [p2Gross, setP2Gross] = useState(saved?.p2Gross ?? "");
-  const [p1Options, setP1Options] = useState(saved?.p1Options ?? defaultOptions());
-  const [p2Options, setP2Options] = useState(saved?.p2Options ?? defaultOptions());
-  const [childrenUnder14, setChildrenUnder14] = useState(saved?.childrenUnder14 ?? 0);
-  const [persons14Plus, setPersons14Plus] = useState(saved?.persons14Plus ?? 0);
+  const [p1Gross, setP1Gross] = useState("");
+  const [p2Gross, setP2Gross] = useState("");
+  const [p1Options, setP1Options] = useState(defaultOptions());
+  const [p2Options, setP2Options] = useState(defaultOptions());
+  const [childrenUnder14, setChildrenUnder14] = useState(0);
+  const [persons14Plus, setPersons14Plus] = useState(0);
   const [p1Expanded, setP1Expanded] = useState(false);
   const [p2Expanded, setP2Expanded] = useState(false);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ p1Gross, p2Gross, p1Options, p2Options, childrenUnder14, persons14Plus }),
-      );
-    } catch {}
-  }, [p1Gross, p2Gross, p1Options, p2Options, childrenUnder14, persons14Plus]);
 
   const g1 = parseFloat(p1Gross) || 0;
   const g2 = parseFloat(p2Gross) || 0;
