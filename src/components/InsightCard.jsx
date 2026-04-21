@@ -376,7 +376,7 @@ export default function InsightCard({
                     display: "inline-block",
                   }}
                 />
-                {part.label}: <strong style={{ color: colors.text }}>\u00A3{part.value.toLocaleString("en-GB")}</strong>
+                {part.label}: <strong style={{ color: colors.text }}>£{part.value.toLocaleString("en-GB")}</strong>
                 <span style={{ color: colors.dim }}>
                   ({Math.round((part.value / totalTakeHome) * 100)}%)
                 </span>
@@ -396,10 +396,10 @@ export default function InsightCard({
             }}
           >
             <span>
-              Monthly: <strong style={{ color: "#4ecb71" }}>\u00A3{Math.round(taxProfile.net / 12).toLocaleString("en-GB")}</strong>
+              Monthly: <strong style={{ color: "#4ecb71" }}>£{Math.round(taxProfile.net / 12).toLocaleString("en-GB")}</strong>
             </span>
             <span>
-              Weekly: <strong style={{ color: "#4ecb71" }}>\u00A3{Math.round(taxProfile.net / 52).toLocaleString("en-GB")}</strong>
+              Weekly: <strong style={{ color: "#4ecb71" }}>£{Math.round(taxProfile.net / 52).toLocaleString("en-GB")}</strong>
             </span>
             <span>
               Effective rate: <strong style={{ color: colors.text }}>{taxProfile.effectiveRate}%</strong>

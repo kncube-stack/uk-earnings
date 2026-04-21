@@ -72,9 +72,9 @@ export default function GenderGapCard({
       <div style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1.8, color: colors.body }}>
         In <strong style={{ color: colors.text }}>{selectedLabel}</strong>{selectionContext ? ` ${selectionContext}` : ""}, the published ONS median hourly pay excluding overtime for
         {" "}
-        <strong style={{ color: colors.blue }}>men</strong> is <strong style={{ color: colors.text }}>\u00A3{maleMedian?.toFixed(2) ?? "\u2014"}</strong>
+        <strong style={{ color: colors.blue }}>men</strong> is <strong style={{ color: colors.text }}>£{maleMedian?.toFixed(2) ?? "\u2014"}</strong>
         {" "}
-        and for <strong style={{ color: colors.gold }}>women</strong> is <strong style={{ color: colors.text }}>\u00A3{femaleMedian?.toFixed(2) ?? "\u2014"}</strong>
+        and for <strong style={{ color: colors.gold }}>women</strong> is <strong style={{ color: colors.text }}>£{femaleMedian?.toFixed(2) ?? "\u2014"}</strong>
         {" "}
         among {workLabel}. {describeGap(gapPct)} {comparison}
       </div>
