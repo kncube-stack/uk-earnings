@@ -11,7 +11,7 @@ def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"", "x", "..", ":", "-"}:
             return None
         try:
@@ -82,7 +82,7 @@ def main():
         raise SystemExit("Usage: generate_gender_gap_detail_data.py <table14_dir>")
 
     source_dir = Path(sys.argv[1])
-    path = source_dir / "PROV - Occupation SOC20 (4) Table 14.6a   Hourly pay - Excluding overtime 2025.xlsx"
+    path = source_dir / "PROV - Occupation  SOC20 (4) Table 14.6a   Hourly pay - Excluding overtime 2026.xlsx"
 
     output = {
         "all": build_detail_rows(path, "Male", "Female"),
@@ -92,7 +92,7 @@ def main():
     sys.stdout.write(
         "\n".join(
             [
-                "// Generated from ONS ASHE 2025 Table 14 hourly excluding overtime workbook.",
+                "// Generated from ONS ASHE 2026 Table 14 hourly excluding overtime workbook.",
                 f"export const OCCUPATION_DETAIL_GAP_DATA = {json.dumps(output, ensure_ascii=False, indent=2)};",
                 "",
             ]

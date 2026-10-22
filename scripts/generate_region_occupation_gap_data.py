@@ -7,7 +7,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 
-WORKBOOK_FILE = "PROV - Work Region Occupation SOC20 (2) Table 3.6a   Hourly pay - Excluding overtime 2025.xlsx"
+WORKBOOK_FILE = "PROV - Work Region Occupation SOC20 (2) Table 3.6a   Hourly pay - Excluding overtime 2026.xlsx"
 
 OCCUPATION_SHORT_LABELS = {
     "1": "Managers",
@@ -46,7 +46,7 @@ def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"", "x", "..", ":", "-"}:
             return None
         try:
@@ -156,7 +156,7 @@ def main():
     dataset = build_gap_dataset(source_dir)
 
     output = [
-        "// Generated from ONS ASHE 2025 Table 3 hourly excluding overtime workbook.",
+        "// Generated from ONS ASHE 2026 Table 3 hourly excluding overtime workbook.",
         f"export const OCCUPATION_REGION_GAP_DATA = {json.dumps(dataset, ensure_ascii=False, indent=2)};",
         "",
     ]

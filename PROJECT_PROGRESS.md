@@ -26,7 +26,7 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 
 ### Phase 4
 
-- Added a `Region` view using official ONS ASHE 2025 Table 15 workplace region data.
+- Added a `Region` view using the official ONS UK region-by-age dataset (named WGOR Age in the 2025 files and Table 34 in 2026).
 - Added a `Sector` view using official ONS ASHE 2025 Table 13 public/private/non-profit data.
 - Added an age-band refine inside `Occupation` using official ONS ASHE 2025 Table 20 age-by-occupation data.
 - Kept the visual layout stable and only adjusted the selector row to wrap cleanly on mobile.
@@ -48,7 +48,7 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
   - occupation from Table 2
   - industry from Table 4
   - sector from Table 13
-  - region from Table 15
+  - region from the UK region-by-age dataset
   - occupation age-band refine from Table 20
   - four-digit occupation drill-down from Table 14
 - Used the official ONS formula: `(men's median hourly pay excluding overtime - women's median hourly pay excluding overtime) / men's median hourly pay excluding overtime`.
@@ -100,19 +100,22 @@ Build a clean, mobile-friendly earnings explorer using official ONS ASHE data wi
 
 ## Data Sources
 
-- Age view: embedded ASHE 2025 provisional age data already in the app.
+- All earnings and gender-gap views currently use ASHE 2026 provisional data, published 22 October 2026.
+- Age view: ONS ASHE Table 6, including generated age and pay-composition modules.
 - Occupation view: ONS ASHE Table 2.
 - Industry view: ONS ASHE Table 4.
-- Region view: ONS ASHE Table 15.
+- Region view: ONS ASHE UK region by age group (Table 34).
 - Sector view: ONS ASHE Table 13.
 - Occupation age-band refine: ONS ASHE Table 20.
 - Occupation region refine: ONS ASHE Table 3.
 - Occupation four-digit drill-down: ONS ASHE Table 14.
-- Official gender pay gap mode: ONS ASHE Tables 6, 2, 4, 13, 15, 20, and 14 using hourly pay excluding overtime only.
+- Official gender pay gap mode: ONS ASHE Tables 6, 2, 4, 13, 14 and 20, plus UK region by age group (Table 34), using hourly pay excluding overtime only.
 - Occupation region gender pay gap refine: ONS ASHE Table 3 using hourly pay excluding overtime.
 
 ## Generator Scripts
 
+- `scripts/generate_age_data.py`
+- `scripts/generate_age_composition_data.py`
 - `scripts/generate_occupation_data.py`
 - `scripts/generate_industry_data.py`
 - `scripts/generate_region_data.py`

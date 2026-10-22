@@ -8,10 +8,10 @@ from openpyxl import load_workbook
 
 
 PERIOD_FILES = {
-    "annual": "PROV - Work Region Occupation SOC20 (2) Table 3.7a   Annual pay - Gross 2025.xlsx",
-    "weekly": "PROV - Work Region Occupation SOC20 (2) Table 3.1a   Weekly pay - Gross 2025.xlsx",
-    "hourly": "PROV - Work Region Occupation SOC20 (2) Table 3.5a   Hourly pay - Gross 2025.xlsx",
-    "hours": "PROV - Work Region Occupation SOC20 (2) Table 3.9a   Paid hours worked - Total 2025.xlsx",
+    "annual": "PROV - Work Region Occupation SOC20 (2) Table 3.7a   Annual pay - Gross 2026.xlsx",
+    "weekly": "PROV - Work Region Occupation SOC20 (2) Table 3.1a   Weekly pay - Gross 2026.xlsx",
+    "hourly": "PROV - Work Region Occupation SOC20 (2) Table 3.5a   Hourly Pay - Gross 2026.xlsx",
+    "hours": "PROV - Work Region Occupation SOC20 (2) Table 3.9a   Paid hours worked - Total 2026.xlsx",
 }
 
 SHEET_MAP = {
@@ -70,12 +70,14 @@ FIELDS = [
     ("p90", 17),
 ]
 
+PERCENTILE_FIELDS = ["p10", "p20", "p25", "p30", "p40", "p60", "p70", "p75", "p80", "p90"]
+
 
 def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"", "x", "..", ":", "-"}:
             return None
         try:
@@ -98,6 +100,20 @@ def normalize_label(label, region_label):
     if text.startswith(prefix):
         return text[len(prefix):].strip()
     return text
+
+
+def null_invalid_percentiles(record):
+    """Keep an obviously mistyped ONS percentile from breaking the chart scale."""
+    previous = None
+    for field in PERCENTILE_FIELDS:
+        value = record[field]
+        if value is None:
+            continue
+        if previous is not None and value < previous:
+            record[field] = None
+            continue
+        previous = value
+    return record
 
 
 def parse_sheet(path: Path, sheet_name: str):
@@ -124,12 +140,12 @@ def parse_sheet(path: Path, sheet_name: str):
 
         label = normalize_label(row[0], current_region_label)
         rows_by_region[current_region_id].append(
-            {
+            null_invalid_percentiles({
                 "id": row_id,
                 "label": OCCUPATION_LABEL_OVERRIDES.get(row_id, label),
                 "shortLabel": OCCUPATION_SHORT_LABELS.get(row_id, label),
                 **{field: clean_value(row[index - 1]) for field, index in FIELDS},
-            }
+            })
         )
 
     return rows_by_region
@@ -155,7 +171,7 @@ def main():
     dataset = build_dataset(source_dir)
 
     output = [
-        "// Generated from ONS ASHE 2025 Table 3 workbooks.",
+        "// Generated from ONS ASHE 2026 Table 3 workbooks.",
         f"export const OCCUPATION_REGION_DATA = {json.dumps(dataset, ensure_ascii=False, indent=2)};",
         "",
     ]

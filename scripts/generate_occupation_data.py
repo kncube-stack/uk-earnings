@@ -8,10 +8,10 @@ from openpyxl import load_workbook
 
 
 PERIOD_FILES = {
-    "annual": "PROV - Occupation SOC20 (2) Table 2.7a   Annual pay - Gross 2025.xlsx",
-    "weekly": "PROV - Occupation SOC20 (2) Table 2.1a   Weekly pay - Gross 2025.xlsx",
-    "hourly": "PROV - Occupation SOC20 (2) Table 2.5a   Hourly pay - Gross 2025.xlsx",
-    "hours": "PROV - Occupation SOC20 (2) Table 2.9a   Paid hours worked - Total 2025.xlsx",
+    "annual": "PROV - Occupation SOC20 (2) Table 2.7a   Annual pay - Gross 2026.xlsx",
+    "weekly": "PROV - Occupation SOC20 (2) Table 2.1a   Weekly pay - Gross 2026.xlsx",
+    "hourly": "PROV - Occupation SOC20 (2) Table 2.5a   Hourly Pay - Gross 2026.xlsx",
+    "hours": "PROV - Occupation SOC20 (2) Table 2.9a   Paid hours worked - Total 2026.xlsx",
 }
 
 SHEET_MAP = {
@@ -55,7 +55,7 @@ def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"x", "..", ":", "-"}:
             return None
         try:
@@ -114,7 +114,7 @@ def main():
     dataset = build_dataset(source_dir)
 
     output = [
-        "// Generated from ONS ASHE 2025 Table 2 workbooks.",
+        "// Generated from ONS ASHE 2026 Table 2 workbooks.",
         f"export const OCCUPATION_DATA = {json.dumps(dataset, ensure_ascii=False, indent=2)};",
         "",
         "export const OCCUPATION_OPTIONS = OCCUPATION_DATA.annual.all.map(({ id, label, shortLabel }) => ({",

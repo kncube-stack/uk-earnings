@@ -8,10 +8,10 @@ from openpyxl import load_workbook
 
 
 PERIOD_FILES = {
-    "annual": "PROV - SIC07 Industry (2) SIC2007 Table 4.7a   Annual pay - Gross 2025.xlsx",
-    "weekly": "PROV - SIC07 Industry (2) SIC2007 Table 4.1a   Weekly pay - Gross 2025.xlsx",
-    "hourly": "PROV - SIC07 Industry (2) SIC2007 Table 4.5a   Hourly pay - Gross 2025.xlsx",
-    "hours": "PROV - SIC07 Industry (2) SIC2007 Table 4.9a   Paid hours worked - Total 2025.xlsx",
+    "annual": "PROV - sic07 Industry (2) Table 4.7a   Annual pay - Gross 2026.xlsx",
+    "weekly": "PROV - sic07 Industry (2) Table 4.1a   Weekly pay - Gross 2026.xlsx",
+    "hourly": "PROV - sic07 Industry (2) Table 4.5a   Hourly Pay - Gross 2026.xlsx",
+    "hours": "PROV - sic07 Industry (2) Table 4.9a   Paid hours worked - Total 2026.xlsx",
 }
 
 SHEET_MAP = {
@@ -67,7 +67,7 @@ def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"x", "..", ":", "-"}:
             return None
         try:
@@ -90,7 +90,7 @@ def parse_sheet(path: Path, sheet_name: str):
     for row in sheet.iter_rows(min_row=6, values_only=True):
         label = row[0]
         code = row[1]
-        code_str = code.strip() if isinstance(code, str) else ""
+        code_str = code.strip().lstrip("\'") if isinstance(code, str) else ""
         if len(code_str) != 1 or not code_str.isalpha() or not code_str.isupper():
             continue
 
@@ -126,7 +126,7 @@ def main():
     dataset = build_dataset(source_dir)
 
     output = [
-        "// Generated from ONS ASHE 2025 Table 4 workbooks.",
+        "// Generated from ONS ASHE 2026 Table 4 workbooks.",
         f"export const INDUSTRY_DATA = {json.dumps(dataset, ensure_ascii=False, indent=2)};",
         "",
         "export const INDUSTRY_OPTIONS = INDUSTRY_DATA.annual.all.map(({ id, label, shortLabel }) => ({",

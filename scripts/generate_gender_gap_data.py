@@ -84,12 +84,12 @@ SECTOR_SHORT_LABELS = {
 }
 
 TABLE_FILES = {
-    "age": "PROV - Age Group Table 6.6a   Hourly pay - Excluding overtime 2025.xlsx",
-    "occupation": "PROV - Occupation SOC20 (2) Table 2.6a   Hourly pay - Excluding overtime 2025.xlsx",
-    "industry": "PROV - SIC07 Industry (2) SIC2007 Table 4.6a   Hourly pay - Excluding overtime 2025.xlsx",
-    "region": "PROV - Work Region Age Table WGOR Age.6a   Hourly pay - Excluding overtime 2025.xlsx",
-    "sector": "PROV - PubPriv Table 13.6a   Hourly pay - Excluding overtime 2025.xlsx",
-    "ageOccupation": "PROV - Age by Occupation SOC20 (2) Table 20.6a   Hourly pay - Excluding overtime 2025.xlsx",
+    "age": "PROV - Age Group Table 6.6a   Hourly pay - Excluding overtime 2026.xlsx",
+    "occupation": "PROV - Occupation SOC20 (2) Table 2.6a   Hourly pay - Excluding overtime 2026.xlsx",
+    "industry": "PROV - sic07 Industry (2) Table 4.6a   Hourly pay - Excluding overtime 2026.xlsx",
+    "region": "PROV - Work Region Age Table 34.6a   Hourly pay - Excluding overtime 2026.xlsx",
+    "sector": "PROV - Pubpriv  Table 13.6a   Hourly pay - Excluding overtime 2026.xlsx",
+    "ageOccupation": "PROV - Age by Occupation SOC20 (2) Table 20.6a   Hourly pay - Excluding overtime 2026.xlsx",
 }
 
 
@@ -97,7 +97,7 @@ def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"", "x", "..", ":", "-"}:
             return None
         try:
@@ -430,7 +430,7 @@ def main():
     }
 
     output = [
-        "// Generated from ONS ASHE 2025 hourly excluding overtime workbooks.",
+        "// Generated from ONS ASHE 2026 hourly excluding overtime workbooks.",
         f"export const GAP_BENCHMARKS = {json.dumps(gap_benchmarks, ensure_ascii=False, indent=2)};",
         "",
         f"export const AGE_GAP_DATA = {json.dumps(age_data, ensure_ascii=False, indent=2)};",

@@ -1,0 +1,56 @@
+{
+  "release": "ASHE 2026 provisional",
+  "published": "2026-10-22T09:30:00+01:00",
+  "downloaded": "2026-10-22T10:30:00+01:00",
+  "releasePage": "https://www.ons.gov.uk/releases/employeeearningsintheuk2026",
+  "sources": [
+    {
+      "dashboardData": "Age",
+      "table": "6",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/agegroupashetable6",
+      "archiveSha256": "106405c44490854db77756ac76c48f404d24d43e8c407482ac69ba84549be273"
+    },
+    {
+      "dashboardData": "Occupation groups",
+      "table": "2",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/occupation2digitsocashetable2",
+      "archiveSha256": "a376d72de94dfabb66645ba1ecd49f74e19efa6a971e69a52816f47c552c1b4b"
+    },
+    {
+      "dashboardData": "Occupation by region",
+      "table": "3",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/regionbyoccupation2digitsocashetable3",
+      "archiveSha256": "d58f8b81d05d6408d2248afea2ec6ed4cf7c1594b1472a1973cb959c04421f26"
+    },
+    {
+      "dashboardData": "Industry",
+      "table": "4",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/industry2digitsicashetable4",
+      "archiveSha256": "afa6848f20c5554ef16fbc7fc099aee05d12714a36b239b1892cb90c2a7c687c"
+    },
+    {
+      "dashboardData": "Sector",
+      "table": "13",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/publicandprivatesectorashetable13",
+      "archiveSha256": "a2b5efe4abb13b9d13db5dd96f961acd3fb506675b28176d62e1fee8fe069979"
+    },
+    {
+      "dashboardData": "Detailed occupation",
+      "table": "14",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/occupation4digitsoc2010ashetable14",
+      "archiveSha256": "4719f364d596739679d1bb492a1fc42e4c8e980a5b93ffc791e350f4ba8f4f1d"
+    },
+    {
+      "dashboardData": "Occupation by age",
+      "table": "20",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/agegroupbyoccupation2digitsocashetable20",
+      "archiveSha256": "8692599b36ae5d82a5a123cb24d50767fd78ff3551618602289641c4ffb07656"
+    },
+    {
+      "dashboardData": "Workplace region",
+      "table": "34",
+      "datasetPage": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup",
+      "archiveSha256": "35ba97c1112a3673072af1e99baa90b738973398b2ea32bdb17234d62f8fcb65"
+    }
+  ]
+}

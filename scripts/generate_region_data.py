@@ -8,10 +8,10 @@ from openpyxl import load_workbook
 
 
 PERIOD_FILES = {
-    "annual": "PROV - Work Region Age Table WGOR Age.7a   Annual pay - Gross 2025.xlsx",
-    "weekly": "PROV - Work Region Age Table WGOR Age.1a   Weekly pay - Gross 2025.xlsx",
-    "hourly": "PROV - Work Region Age Table WGOR Age.5a   Hourly pay - Gross 2025.xlsx",
-    "hours": "PROV - Work Region Age Table WGOR Age.9a   Paid hours worked - Total 2025.xlsx",
+    "annual": "PROV - Work Region Age Table 34.7a   Annual pay - Gross 2026.xlsx",
+    "weekly": "PROV - Work Region Age Table 34.1a   Weekly pay - Gross 2026.xlsx",
+    "hourly": "PROV - Work Region Age Table 34.5a   Hourly Pay - Gross 2026.xlsx",
+    "hours": "PROV - Work Region Age Table 34.9a   Paid hours worked - Total 2026.xlsx",
 }
 
 SHEET_MAP = {
@@ -59,7 +59,7 @@ def clean_value(value):
     if value in (None, "", "x", "..", ":", "-"):
         return None
     if isinstance(value, str):
-        stripped = value.strip()
+        stripped = value.strip().lstrip("\'")
         if stripped in {"", "x", "..", ":", "-"}:
             return None
         try:
@@ -118,7 +118,7 @@ def main():
     dataset = build_dataset(source_dir)
 
     output = [
-        "// Generated from ONS ASHE 2025 Table 15 workbooks.",
+        "// Generated from ONS ASHE 2026 UK region-by-age (Table 34) workbooks.",
         f"export const REGION_DATA = {json.dumps(dataset, ensure_ascii=False, indent=2)};",
         "",
         "export const REGION_OPTIONS = REGION_DATA.annual.all.map(({ id, label, shortLabel }) => ({",
