@@ -60,7 +60,7 @@ export default function InsightCard({
   const taxProfile = !isHours && salary
     ? calcNetPay(annualGross, {
         taxRegion,
-        pensionPct: parseFloat(pensionPct) || 0,
+        pensionPct: Number(pensionPct),
         studentLoanPlan,
         hasPostgraduateLoan,
       })
@@ -68,7 +68,7 @@ export default function InsightCard({
   const isAgeView = selectionType === "age";
   const takeHomeParts = taxProfile
     ? [
-        { label: "Take-home", value: taxProfile.net, color: "#4ecb71" },
+        { label: "Take-home", value: taxProfile.net, color: colors.green },
         { label: "Income tax", value: taxProfile.tax, color: "#e05c3a" },
         { label: "National Insurance", value: taxProfile.ni, color: "#d4a843" },
         { label: "Pension", value: taxProfile.pension, color: "#6fa9ff" },
@@ -221,7 +221,7 @@ export default function InsightCard({
         </div>
       )}
 
-      {taxProfile && (
+      {!isHours && salary > 0 && (
         <div style={{ marginTop: 16 }}>
           <div
             style={{
@@ -231,7 +231,7 @@ export default function InsightCard({
               fontWeight: 500,
             }}
           >
-            Estimated take-home pay · 2025/26 rates
+            Estimated take-home pay · historical 2025/26 rates
           </div>
           <div
             style={{
@@ -242,8 +242,8 @@ export default function InsightCard({
             }}
           >
             <div>
-              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Tax region</label>
-              <select
+              <label htmlFor="take-home-1" style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Tax region</label>
+              <select id="take-home-1"
                 value={taxRegion}
                 onChange={(event) => setTaxRegion(event.target.value)}
                 style={{
@@ -265,8 +265,8 @@ export default function InsightCard({
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Pension %</label>
-              <input
+              <label htmlFor="take-home-2" style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Pension %</label>
+              <input id="take-home-2"
                 type="text"
                 inputMode="decimal"
                 value={pensionPct}
@@ -286,8 +286,8 @@ export default function InsightCard({
               />
             </div>
             <div>
-              <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Student loan</label>
-              <select
+              <label htmlFor="take-home-3" style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Student loan</label>
+              <select id="take-home-3"
                 value={studentLoanPlan}
                 onChange={(event) => setStudentLoanPlan(event.target.value)}
                 style={{
@@ -314,6 +314,8 @@ export default function InsightCard({
               <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Postgrad loan</label>
               <button
                 type="button"
+                aria-label="Postgraduate loan"
+                aria-pressed={hasPostgraduateLoan}
                 onClick={() => setHasPostgraduateLoan((current) => !current)}
                 style={{
                   width: "100%",
@@ -333,6 +335,8 @@ export default function InsightCard({
               </button>
             </div>
           </div>
+          {!taxProfile && <p role="alert" style={{ color: colors.red }}>Enter a valid pension percentage from 0 to 100. Pension, NI and loan deductions must not exceed gross pay.</p>}
+          {taxProfile && <>
           <div
             style={{
               display: "flex",
@@ -396,15 +400,16 @@ export default function InsightCard({
             }}
           >
             <span>
-              Monthly: <strong style={{ color: "#4ecb71" }}>£{Math.round(taxProfile.net / 12).toLocaleString("en-GB")}</strong>
+              Monthly: <strong style={{ color: colors.green }}>£{Math.round(taxProfile.net / 12).toLocaleString("en-GB")}</strong>
             </span>
             <span>
-              Weekly: <strong style={{ color: "#4ecb71" }}>£{Math.round(taxProfile.net / 52).toLocaleString("en-GB")}</strong>
+              Weekly: <strong style={{ color: colors.green }}>£{Math.round(taxProfile.net / 52).toLocaleString("en-GB")}</strong>
             </span>
             <span>
               Effective rate: <strong style={{ color: colors.text }}>{taxProfile.effectiveRate}%</strong>
             </span>
           </div>
+          </>}
           {(isHourly || isWeekly) && (
             <div
               style={{
@@ -420,7 +425,7 @@ export default function InsightCard({
             </div>
           )}
           <div style={{ marginTop: 6, fontSize: isMobile ? 9 : 10, color: colors.dim }}>
-            Estimate only. Uses 2025/26 payroll-style bands, standard tax code 1257L, net-pay pension treatment, and annual student-loan thresholds.
+            Estimate only. Uses 2025/26 payroll-style bands, standard tax code 1257L, net-pay pension treatment, and annual student-loan thresholds. Not a current tax-year quote.
           </div>
         </div>
       )}

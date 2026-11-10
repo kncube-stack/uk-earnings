@@ -4,6 +4,8 @@ export default function Pill({ active, disabled = false, onClick, children, isMo
   const { colors } = useTheme();
   return (
     <button
+      type="button"
+      aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
       style={{

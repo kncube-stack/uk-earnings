@@ -112,8 +112,7 @@ export default function EarningsDashboard() {
       !isOccupationView ||
       usesOccupationRegion ||
       usesOccupationAgeBand ||
-      occupationDetailData ||
-      occupationDetailStatus === "loading"
+      occupationDetailData
     ) {
       return undefined;
     }
@@ -172,8 +171,7 @@ export default function EarningsDashboard() {
       !isOccupationView ||
       usesOccupationRegion ||
       usesOccupationAgeBand ||
-      gapOccupationDetailData ||
-      gapOccupationDetailStatus === "loading"
+      gapOccupationDetailData
     ) {
       return undefined;
     }
@@ -357,7 +355,9 @@ export default function EarningsDashboard() {
   const age = !isNaN(rawAge) && rawAge >= 16 ? rawAge : null;
   const userSalary = isHours ? hoursPay : isHourly ? hourlyPay : isWeekly ? weeklyPay : annualPay;
   const setUserSalary = isHours ? setHoursPay : isHourly ? setHourlyPay : isWeekly ? setWeeklyPay : setAnnualPay;
-  const salary = parseFloat(String(userSalary).replace(/[\u00a3,\s]/g, "")) || null;
+  const numericSalary = Number(String(userSalary).replace(/[\u00a3,\s]/g, ""));
+  const salary = Number.isFinite(numericSalary) && numericSalary > 0 ? numericSalary : null;
+  const invalidSalary = userSalary !== "" && salary === null;
   const ageGroupLabel = age ? findGroup(age) : null;
   const selectedBucketId = isOccupationView
     ? usesOccupationDetail || usesGapOccupationDetail
@@ -564,8 +564,8 @@ export default function EarningsDashboard() {
         >
           {isAgeView ? (
             <div style={{ width: isMobile ? "35%" : 60, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Your age</label>
-              <input
+              <label htmlFor="explorer-field-1" style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Your age</label>
+              <input id="explorer-field-1"
                 type="number"
                 min="16"
                 max="80"
@@ -587,8 +587,8 @@ export default function EarningsDashboard() {
             </div>
           ) : (
             <div style={{ width: isMobile ? "100%" : isOccupationView ? 320 : 260, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>{viewConfig.selectorLabel}</label>
-              <select
+              <label htmlFor="explorer-field-2" style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>{viewConfig.selectorLabel}</label>
+              <select id="explorer-field-2"
                 value={viewConfig.selectorValue}
                 onChange={(e) => viewConfig.setSelectorValue(e.target.value)}
                 style={{
@@ -617,8 +617,8 @@ export default function EarningsDashboard() {
 
           {isOccupationView && (
             <div style={{ width: isMobile ? "calc(58% - 5px)" : 170, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Region</label>
-              <select
+              <label htmlFor="explorer-field-3" style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Region</label>
+              <select id="explorer-field-3"
                 value={selectedOccupationRegion}
                 onChange={(e) => {
                   const nextValue = e.target.value;
@@ -654,8 +654,8 @@ export default function EarningsDashboard() {
 
           {isOccupationView && (
             <div style={{ width: isMobile ? "calc(42% - 5px)" : 126, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Age band</label>
-              <select
+              <label htmlFor="explorer-field-4" style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Age band</label>
+              <select id="explorer-field-4"
                 value={selectedOccupationAgeBand}
                 onChange={(e) => {
                   const nextValue = e.target.value;
@@ -693,8 +693,8 @@ export default function EarningsDashboard() {
 
           {isOccupationView && selectedOccupation && (
             <div style={{ width: isMobile ? "100%" : 320, flexShrink: 0 }}>
-              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Job detail</label>
-              <select
+              <label htmlFor="explorer-field-5" style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Job detail</label>
+              <select id="explorer-field-5"
                 value={selectedOccupationDetail}
                 onChange={(e) => setSelectedOccupationDetail(e.target.value)}
                 disabled={selectedOccupationAgeBand || selectedOccupationRegion || currentOccupationDetailStatus === "loading" || currentOccupationDetailStatus === "error"}
@@ -730,15 +730,20 @@ export default function EarningsDashboard() {
                   </option>
                 ))}
               </select>
+              {currentOccupationDetailStatus === "error" && !selectedOccupationAgeBand && !selectedOccupationRegion && (
+                <p role="alert" style={{ marginTop: 8, fontSize: 12, color: colors.muted }}>
+                  Job details could not be downloaded. <button type="button" onClick={() => window.location.reload()}>Reload page</button> to try again. Entered values will be cleared.
+                </p>
+              )}
             </div>
           )}
 
           {!isGapMode && (
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>
+              <label htmlFor="explorer-field-6" style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>
                 {isHours ? "Hours per week" : isHourly ? "Hourly rate (£)" : isWeekly ? "Weekly gross pay (£)" : "Annual salary (£)"}
               </label>
-              <input
+              <input id="explorer-field-6"
                 type="text"
                 inputMode="decimal"
                 value={userSalary}
@@ -760,6 +765,7 @@ export default function EarningsDashboard() {
           )}
         </div>}
 
+        {!isHouseholdMode && !isGapMode && invalidSalary && <p role="alert" style={{ color: colors.red, marginBottom: 12 }}>Enter a valid positive amount to compare earnings.</p>}
         {!isHouseholdMode && !comboAvailable && (
           <div
             style={{

@@ -13,17 +13,19 @@ const ADDITIONAL_RATE_THRESHOLD = 125140;
 const NI_PRIMARY_THRESHOLD = 12570;
 const NI_UPPER_EARNINGS_LIMIT = 50270;
 
+// 2025/26 income AFTER allowances. Fixed band widths must not grow when
+// the personal allowance tapers. Source: HMRC Income Tax rates and allowances.
 const RUK_BANDS = [
-  { upper: 50270, rate: 0.2 },
+  { upper: 37700, rate: 0.2 },
   { upper: ADDITIONAL_RATE_THRESHOLD, rate: 0.4 },
   { upper: Infinity, rate: 0.45 },
 ];
 
 const SCOTLAND_BANDS = [
-  { upper: 15397, rate: 0.19 },
-  { upper: 27491, rate: 0.2 },
-  { upper: 43662, rate: 0.21 },
-  { upper: 75000, rate: 0.42 },
+  { upper: 2827, rate: 0.19 },
+  { upper: 14921, rate: 0.2 },
+  { upper: 31092, rate: 0.21 },
+  { upper: 62430, rate: 0.42 },
   { upper: ADDITIONAL_RATE_THRESHOLD, rate: 0.45 },
   { upper: Infinity, rate: 0.48 },
 ];
@@ -82,11 +84,12 @@ function calculatePersonalAllowance(adjustedNetIncome) {
 function calculateIncomeTax(taxableGross, allowance, taxRegion) {
   const bands = taxRegion === "scotland" ? SCOTLAND_BANDS : RUK_BANDS;
   let tax = 0;
-  let lower = allowance;
+  const taxableIncome = Math.max(0, taxableGross - allowance);
+  let lower = 0;
 
   for (const band of bands) {
-    if (taxableGross <= lower) break;
-    const taxableSlice = Math.max(0, Math.min(taxableGross, band.upper) - lower);
+    if (taxableIncome <= lower) break;
+    const taxableSlice = Math.max(0, Math.min(taxableIncome, band.upper) - lower);
     tax += taxableSlice * band.rate;
     lower = band.upper;
   }
@@ -113,7 +116,9 @@ function calculatePostgraduateLoan(gross, enabled) {
 }
 
 export function calcNetPay(gross, options = TAKE_HOME_DEFAULTS) {
-  if (!gross || gross <= 0) return null;
+  if (!Number.isFinite(gross) || gross <= 0) return null;
+  const requestedPension = Number(options.pensionPct ?? 0);
+  if (!Number.isFinite(requestedPension) || requestedPension < 0 || requestedPension > 100) return null;
 
   const taxRegion = options.taxRegion === "scotland" ? "scotland" : "ruk";
   const pensionPct = clampPercent(Number(options.pensionPct) || 0);
@@ -126,6 +131,8 @@ export function calcNetPay(gross, options = TAKE_HOME_DEFAULTS) {
   const postgraduateLoan = calculatePostgraduateLoan(gross, Boolean(options.hasPostgraduateLoan));
   const totalDeductions = tax + ni + pension + studentLoan + postgraduateLoan;
   const net = gross - totalDeductions;
+  // Reject unaffordable deductions; never silently change the requested pension.
+  if (!Number.isFinite(net) || net < 0) return null;
 
   return {
     net: Math.round(net),

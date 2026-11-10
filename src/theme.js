@@ -38,28 +38,28 @@ export const dark = {
   green: "#4ecb71",
   text: "#e8e6e1",
   muted: "#8a8578",
-  dim: "#555249",
+  dim: "#9b958a",
   faint: "#2a2d33",
   body: "#c5c0b6",
   medianDot: "#f5f0e8",
-  source: "#3a3830",
+  source: "#9b958a",
 };
 
 export const light = {
   bg: "#f5f3ef",
   card: "#ffffff",
   border: "#e0ddd7",
-  gold: "#b8912e",
+  gold: "#806018",
   blue: "#3a6ea5",
   red: "#d04725",
-  green: "#2d9e50",
+  green: "#237b3e",
   text: "#1a1a1a",
   muted: "#6b6560",
-  dim: "#9a9490",
+  dim: "#68625c",
   faint: "#e8e5e0",
   body: "#4a4540",
   medianDot: "#1a1a1a",
-  source: "#b0aaa0",
+  source: "#68625c",
 };
 
 // Keep backward-compatible static export (defaults to dark)

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { BHC_MEDIAN } from "../data/hbaiPercentiles";
+import { BHC_MEDIAN, BHC_PERCENTILES } from "../data/hbaiPercentiles";
 import { useTheme } from "../theme";
 import { TAKE_HOME_DEFAULTS } from "../utils/earnings";
 import { calcHousehold } from "../utils/household";
@@ -11,6 +11,7 @@ function Stepper({ label, value, onChange, min = 0, max = 10, colors, isMobile }
       <span style={{ fontSize: isMobile ? 12 : 13, color: colors.muted, minWidth: isMobile ? 120 : 150 }}>{label}</span>
       <button
         type="button"
+        aria-label={`Decrease ${label}`}
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
         style={{
@@ -45,6 +46,7 @@ function Stepper({ label, value, onChange, min = 0, max = 10, colors, isMobile }
       </span>
       <button
         type="button"
+        aria-label={`Increase ${label}`}
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
         style={{
@@ -94,8 +96,8 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
         </span>
       </div>
       <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Annual gross salary (£)</label>
-        <input
+        <label htmlFor={`partner-${index}-field-1`} style={{ fontSize: 11, color: colors.muted, display: "block", marginBottom: 4 }}>Annual gross salary (£)</label>
+        <input id={`partner-${index}-field-1`}
           type="text"
           inputMode="decimal"
           placeholder="e.g. 35000"
@@ -117,6 +119,8 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
       </div>
       <button
         type="button"
+        aria-expanded={expanded}
+        aria-controls={`partner-${index}-settings`}
         onClick={() => setExpanded(!expanded)}
         style={{
           background: "none",
@@ -131,7 +135,7 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
         {expanded ? "▼" : "▶"} Tax settings
       </button>
       {expanded && (
-        <div
+        <div id={`partner-${index}-settings`}
           style={{
             marginTop: 8,
             display: "grid",
@@ -140,8 +144,8 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
           }}
         >
           <div>
-            <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Tax region</label>
-            <select
+            <label htmlFor={`partner-${index}-field-2`} style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Tax region</label>
+            <select id={`partner-${index}-field-2`}
               value={options.taxRegion}
               onChange={(e) => setOptions({ ...options, taxRegion: e.target.value })}
               style={{
@@ -163,8 +167,8 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
             </select>
           </div>
           <div>
-            <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Pension %</label>
-            <input
+            <label htmlFor={`partner-${index}-field-3`} style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Pension %</label>
+            <input id={`partner-${index}-field-3`}
               type="text"
               inputMode="decimal"
               value={options.pensionPct}
@@ -189,8 +193,8 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
             />
           </div>
           <div>
-            <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Student loan</label>
-            <select
+            <label htmlFor={`partner-${index}-field-4`} style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Student loan</label>
+            <select id={`partner-${index}-field-4`}
               value={options.studentLoanPlan}
               onChange={(e) => setOptions({ ...options, studentLoanPlan: e.target.value })}
               style={{
@@ -217,6 +221,8 @@ function PartnerSection({ index, gross, setGross, options, setOptions, colors, i
             <label style={{ fontSize: 10, color: colors.dim, display: "block", marginBottom: 4 }}>Postgrad loan</label>
             <button
               type="button"
+              aria-label={`${label} postgraduate loan`}
+              aria-pressed={options.hasPostgraduateLoan}
               onClick={() => setOptions({ ...options, hasPostgraduateLoan: !options.hasPostgraduateLoan })}
               style={{
                 width: "100%",
@@ -315,6 +321,8 @@ const defaultOptions = () => ({
 export default function HouseholdCard({ isMobile, isTablet }) {
   const { colors } = useTheme();
 
+  const [hasPartner, setHasPartner] = useState(true);
+  const [eligibleChildren, setEligibleChildren] = useState(0);
   const [p1Gross, setP1Gross] = useState("");
   const [p2Gross, setP2Gross] = useState("");
   const [p1Options, setP1Options] = useState(defaultOptions());
@@ -324,9 +332,10 @@ export default function HouseholdCard({ isMobile, isTablet }) {
   const [p1Expanded, setP1Expanded] = useState(false);
   const [p2Expanded, setP2Expanded] = useState(false);
 
-  const g1 = parseFloat(p1Gross) || 0;
-  const g2 = parseFloat(p2Gross) || 0;
-  const hasInput = g1 > 0 || g2 > 0;
+  const g1 = Number(p1Gross);
+  const g2 = hasPartner ? Number(p2Gross) : 0;
+  const hasInput = p1Gross.trim() !== "" || (hasPartner && p2Gross.trim() !== "");
+  const benefitChildren = Math.min(eligibleChildren, childrenUnder14 + persons14Plus);
 
   const result = useMemo(() => {
     if (!hasInput) return null;
@@ -335,20 +344,21 @@ export default function HouseholdCard({ isMobile, isTablet }) {
       g2,
       {
         taxRegion: p1Options.taxRegion,
-        pensionPct: parseFloat(p1Options.pensionPct) || 0,
+        pensionPct: Number(p1Options.pensionPct),
         studentLoanPlan: p1Options.studentLoanPlan,
         hasPostgraduateLoan: p1Options.hasPostgraduateLoan,
       },
       {
         taxRegion: p2Options.taxRegion,
-        pensionPct: parseFloat(p2Options.pensionPct) || 0,
+        pensionPct: Number(p2Options.pensionPct),
         studentLoanPlan: p2Options.studentLoanPlan,
         hasPostgraduateLoan: p2Options.hasPostgraduateLoan,
       },
       childrenUnder14,
       persons14Plus,
+      { hasPartner, eligibleChildren: benefitChildren },
     );
-  }, [g1, g2, p1Options, p2Options, childrenUnder14, persons14Plus, hasInput]);
+  }, [g1, g2, p1Options, p2Options, childrenUnder14, persons14Plus, hasInput, hasPartner, benefitChildren]);
 
   const fmtGbp = useCallback((v) => `\u00A3${Math.round(v).toLocaleString("en-GB")}`, []);
 
@@ -372,9 +382,12 @@ export default function HouseholdCard({ isMobile, isTablet }) {
         Household Income
       </div>
       <div style={{ fontSize: isMobile ? 11 : 12, color: colors.dim, marginBottom: 16 }}>
-        Enter gross salaries and household size to see your combined take-home pay and where you sit on the UK income distribution.
+        Historical estimate using 2025/26 tax and benefit rates. Enter salaries and household size to compare with the 2023/24 UK income distribution.
       </div>
 
+      <label style={{ display: "block", color: colors.muted, fontSize: 13, marginBottom: 16 }}>
+        <input type="checkbox" checked={hasPartner} onChange={event => setHasPartner(event.target.checked)} /> Include a partner, even if they have no earnings
+      </label>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
         <PartnerSection
           index={0}
@@ -387,7 +400,7 @@ export default function HouseholdCard({ isMobile, isTablet }) {
           expanded={p1Expanded}
           setExpanded={setP1Expanded}
         />
-        <PartnerSection
+        {hasPartner && <PartnerSection
           index={1}
           gross={p2Gross}
           setGross={setP2Gross}
@@ -397,7 +410,7 @@ export default function HouseholdCard({ isMobile, isTablet }) {
           isMobile={isMobile}
           expanded={p2Expanded}
           setExpanded={setP2Expanded}
-        />
+        />}
       </div>
 
       <div
@@ -425,26 +438,31 @@ export default function HouseholdCard({ isMobile, isTablet }) {
           <Stepper
             label="Children under 14"
             value={childrenUnder14}
-            onChange={setChildrenUnder14}
+            onChange={value => { setChildrenUnder14(value); setEligibleChildren(current => Math.min(current, value + persons14Plus)); }}
             colors={colors}
             isMobile={isMobile}
           />
           <Stepper
             label="Dependants 14+"
             value={persons14Plus}
-            onChange={setPersons14Plus}
+            onChange={value => { setPersons14Plus(value); setEligibleChildren(current => Math.min(current, childrenUnder14 + value)); }}
             colors={colors}
             isMobile={isMobile}
           />
+          <Stepper label="Eligible for Child Benefit" value={benefitChildren} onChange={setEligibleChildren} max={childrenUnder14 + persons14Plus} colors={colors} isMobile={isMobile} />
+          <p style={{ fontSize: 12, color: colors.dim, lineHeight: 1.5 }}>
+            Exclude your partner from dependant counts. Child Benefit is optional here: count only eligible children, normally under 16, or under 20 in approved education or training. <a href="https://www.gov.uk/child-benefit/eligibility" style={{ color: colors.blue }}>Check eligibility</a>.
+          </p>
         </div>
       </div>
 
       {!hasInput && (
         <div style={{ textAlign: "center", color: colors.dim, fontSize: 13, padding: "20px 0" }}>
-          Enter at least one salary above to see results.
+          Enter at least one salary above (including 0) to see results.
         </div>
       )}
 
+      {hasInput && !result && <p role="alert" style={{ color: colors.red, marginBottom: 16 }}>Enter valid salaries and pension percentages from 0 to 100. Pension, NI and loan deductions must not exceed gross pay.</p>}
       {result && (
         <>
           {[
@@ -454,7 +472,7 @@ export default function HouseholdCard({ isMobile, isTablet }) {
             .filter((p) => p.gross > 0)
             .map((partner) => {
               const parts = [
-                { label: "Take-home", value: partner.data.net, color: "#4ecb71" },
+                { label: "Take-home", value: partner.data.net, color: colors.green },
                 { label: "Income tax", value: partner.data.tax, color: "#e05c3a" },
                 { label: "NI", value: partner.data.ni, color: "#d4a843" },
                 { label: "Pension", value: partner.data.pension, color: "#6fa9ff" },
@@ -540,12 +558,13 @@ export default function HouseholdCard({ isMobile, isTablet }) {
                       borderTop: `1px solid ${colors.faint}`,
                       display: "flex",
                       gap: isMobile ? 8 : 16,
+                      flexWrap: "wrap",
                       fontSize: isMobile ? 10 : 11,
                       color: colors.muted,
                     }}
                   >
-                    <span>Monthly: <strong style={{ color: "#4ecb71" }}>{fmtGbp(partner.data.net / 12)}</strong></span>
-                    <span>Weekly: <strong style={{ color: "#4ecb71" }}>{fmtGbp(partner.data.net / 52)}</strong></span>
+                    <span>Monthly: <strong style={{ color: colors.green }}>{fmtGbp(partner.data.net / 12)}</strong></span>
+                    <span>Weekly: <strong style={{ color: colors.green }}>{fmtGbp(partner.data.net / 52)}</strong></span>
                     <span>Effective rate: <strong style={{ color: colors.text }}>{partner.data.effectiveRate}%</strong></span>
                   </div>
                 </div>
@@ -561,7 +580,7 @@ export default function HouseholdCard({ isMobile, isTablet }) {
                 fontStyle: "italic",
               }}
             >
-              Child Benefit is {fmtGbp(result.childBenefit.gross)}/yr but {fmtGbp(result.childBenefit.clawback)} is clawed back via the High Income Child Benefit Charge (higher earner above £60k).
+              Child Benefit is {fmtGbp(result.childBenefit.gross)}/yr but {fmtGbp(result.childBenefit.clawback)} is clawed back via the High Income Child Benefit Charge (higher adjusted net income above £60k, after modelled net-pay pension contributions).
             </div>
           )}
 
@@ -580,12 +599,12 @@ export default function HouseholdCard({ isMobile, isTablet }) {
                   Child Benefit
                   {result.childBenefit.clawback > 0 && <span style={{ color: colors.dim }}> (after HICBC)</span>}
                 </span>
-                <strong style={{ color: "#4ecb71" }}>+{fmtGbp(result.childBenefit.net)}/yr</strong>
+                <strong style={{ color: colors.green }}>+{fmtGbp(result.childBenefit.net)}/yr</strong>
               </div>
             )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
               <span style={{ fontSize: isMobile ? 12 : 13, color: colors.muted }}>Total household disposable</span>
-              <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: "#4ecb71" }}>
+              <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: colors.green }}>
                 {fmtGbp(result.disposableAnnual)}<span style={{ fontSize: 11, fontWeight: 400, color: colors.dim }}>/yr</span>
               </span>
             </div>
@@ -617,17 +636,17 @@ export default function HouseholdCard({ isMobile, isTablet }) {
             <div style={{ fontSize: isMobile ? 11 : 12, color: colors.body, lineHeight: 1.6, marginBottom: 8 }}>
               After equivalising for household size (factor {result.eqFactor.toFixed(2)}), your household income is{" "}
               <strong style={{ color: colors.text }}>{fmtGbp(result.equivalisedWeekly)}/wk</strong> compared to the UK median of{" "}
-              <strong style={{ color: colors.text }}>£{BHC_MEDIAN}/wk</strong>. That places you around the{" "}
+              <strong style={{ color: colors.text }}>£{BHC_MEDIAN}/wk</strong>. That places you {result.equivalisedWeekly <= BHC_PERCENTILES[0][1] ? "at or below the" : result.equivalisedWeekly >= BHC_PERCENTILES.at(-1)[1] ? "at or above the" : "around the"}{" "}
               <strong style={{ color: colors.gold }}>{Math.round(result.percentile)}{ordinalSuffix(Math.round(result.percentile))} percentile</strong>.
             </div>
             <PercentileBar percentile={result.percentile} colors={colors} isMobile={isMobile} />
             <div style={{ fontSize: isMobile ? 9 : 10, color: colors.dim, marginTop: 8 }}>
-              Equivalisation adjusts income for household size using the Modified OECD scale so different households can be fairly compared. Percentiles use DWP HBAI FYE 2024 data (before housing costs).
+              Equivalisation adjusts income for household size using the Modified OECD scale so different households can be fairly compared. Percentiles use DWP HBAI FYE 2024 data (before housing costs), in 2023/24 prices. This comparison is not adjusted for inflation and excludes other income and benefits. Published percentile coverage is 4th to 97th.
             </div>
           </div>
 
           <div style={{ fontSize: isMobile ? 9 : 10, color: colors.dim, lineHeight: 1.5 }}>
-            Estimate only. Uses 2025/26 payroll-style tax bands, standard tax code 1257L, net-pay pension treatment, and annual student-loan thresholds. Child Benefit uses 2025/26 rates with HICBC clawback above £60k.
+            Estimate only. Uses 2025/26 payroll-style tax bands, standard tax code 1257L, net-pay pension treatment, and annual student-loan thresholds. Child Benefit uses 2025/26 rates with HICBC above £60k of adjusted net income, assuming no other income or tax reliefs. These are historical rates, not a current tax-year quote.
           </div>
         </>
       )}
